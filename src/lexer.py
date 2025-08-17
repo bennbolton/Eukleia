@@ -1,9 +1,10 @@
 import re
 from tokens import TokenType
+import parser
 
 class Token:
-    def __init__(self, type, value=None):
-        self.type = type
+    def __init__(self, tType, value=None):
+        self.type = tType
         self.value = value
         
     def __repr__(self):
@@ -22,7 +23,8 @@ class Lexer:
         '@': TokenType.AT,
         '=': TokenType.EQUALS,
         '^': TokenType.CARAT,
-        '*': TokenType.INTERSECT
+        '*': TokenType.INTERSECT,
+        '#': TokenType.HASH
     }
     def __init__(self, text):
         self.text = text
@@ -45,18 +47,27 @@ class Lexer:
         
         while (ch := self.next_char()) is not None:
             # ignore whitespace
+            if ch == '\n':
+                tokens.append(Token(TokenType.NEWLINE))
             if ch.isspace():
                 continue
-            # if token begins with letter
+            # if token begins with uppercase letter
             elif ch.isupper():
                 ident = ch
                 # collect rest of token
-                while ((nxt := self.peek()) and (nxt.isalnum() or nxt == '_')):
+                while ((nxt := self.peek()) and ((nxt.isalnum() and not nxt.isupper()) or nxt == '_' )):
                     ident += self.next_char()
                 if ident in self.KEYWORDS:
                     tokens.append(Token(TokenType.KEYWORD, ident))
                 else:
-                    tokens.append(Token(TokenType.IDENTIFIER, ident))
+                    tokens.append(Token(TokenType.OBJECT, ident))
+            elif ch.islower() or ch == '_':
+                ident = ch
+                # collect the rest
+                while ((nxt := self.peek()) and (nxt.isalnum() or nxt == '_')):
+                    ident += self.next_char()
+                tokens.append(Token(TokenType.IDENTIFIER, ident))
+                    
             # if token is a number
             elif ch.isdigit() or (ch == '.' and self.peek() and self.peek().isdigit()):
                 num = ch
@@ -64,11 +75,13 @@ class Lexer:
                     num += self.next_char()
                 tokens.append(Token(TokenType.NUMBER, float(num)))
             elif ch in self.OPERATORS:
-                tokens.append(Token(self.OPERATORS[ch]))
+                occ = 1
+                while ((nxt := self.peek()) and nxt in self.OPERATORS and self.OPERATORS[ch] == self.OPERATORS[nxt]):
+                    occ += 1
+                    self.next_char()
+                tokens.append(Token(self.OPERATORS[ch], occ))
             else:
                 raise Exception(f'Unexpected character: {ch}')
         
         tokens.append(Token(TokenType.EOF))
         return tokens
-
-print(Lexer("C = Circle(0,0,     5)").generate_tokens())

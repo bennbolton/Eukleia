@@ -3,6 +3,7 @@ from enum import Enum, auto
 class TokenType(Enum):
     """Enum representing different types of tokens."""
     IDENTIFIER = auto()
+    OBJECT = auto()
     KEYWORD = auto()
     NUMBER = auto()
     LPAREN = auto()  # Left Parenthesis
@@ -16,5 +17,7 @@ class TokenType(Enum):
     UNKNOWN = auto()
     CARAT = auto()
     AT = auto()
+    NEWLINE = auto()
+    HASH = auto()
     
     EOF = auto()
