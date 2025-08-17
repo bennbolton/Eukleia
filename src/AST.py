@@ -41,12 +41,6 @@ class Query(ASTNode):
     def __repr__(self):
         return f'{self.function}({', '.join(map(str, self.args))})'
         
-class Unknown(ASTNode):
-    def __init__(self):
-        pass
-    def __repr__(self):
-        print("representing")
-        return '?'
     
 class Number(ASTNode):
     def __init__(self, value):
@@ -54,4 +48,8 @@ class Number(ASTNode):
     def __repr__(self):
         return str(round(self.value, 2))
     
-
+class Unknown(Number):
+    def __init__(self):
+        self.value = '?'
+    def __repr__(self):
+        return '?'

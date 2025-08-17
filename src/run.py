@@ -35,6 +35,8 @@ def main():
         
     interpreter = Interpreter()
     interpreter.run(ast_nodes)
+    
+    print(interpreter.symbols['C'])
 
 if __name__ == "__main__":
     main()   
