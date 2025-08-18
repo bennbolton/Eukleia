@@ -2,6 +2,7 @@ from tokens import TokenType
 from AST import *
 
 class Parser:
+    CONSTRAINTOPERATORS = [TokenType.SLASH, TokenType.AT, TokenType.EQUALS]
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
@@ -34,9 +35,28 @@ class Parser:
         # Keyword: Circle
         elif tok and tok.type == TokenType.KEYWORD:
             return self.parseExpression()
+        # Constraint: AB // CD
+        elif nxt and nxt.type in self.CONSTRAINTOPERATORS and nxt.value == 2:
+            print("ehh")
+            left = self.parseExpression()
+            
+            op = self.expect(self.CONSTRAINTOPERATORS, 2)
+            right = self.parseExpression()
+            return Constraint(left, op, right)
         # Line: AB
         elif tok and tok.type == TokenType.OBJECT and nxt and nxt.type == TokenType.OBJECT:
             return self.parseExpression()
+        # "<" operator shorthand
+        elif tok and tok.type == TokenType.ANGLE:
+            self.expect(TokenType.ANGLE)
+            p1, v, p2 = self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT)
+            angle = Query(None, "Angle", (ObjectReference(p1.value), ObjectReference(v.value), ObjectReference(p2.value)))
+            if (peek_tok := self.peek()) and peek_tok.type in self.CONSTRAINTOPERATORS and peek_tok.value == 2:
+                op = self.expect(self.CONSTRAINTOPERATORS, 2)
+                right = self.parseExpression()
+                return Constraint(angle, op, right)
+            else:
+                return angle
         elif tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT) and nxt and nxt.type == TokenType.LPAREN:
             raise TypeError(f"{tok} is not callable")  
         
@@ -84,10 +104,7 @@ class Parser:
                 return ObjectReference(tok.value)
             elif tok.type == TokenType.IDENTIFIER:
                 return VariableReference(tok.value)
-        # "<" operator shorthand
-        elif tok.type == TokenType.ANGLE:
-            p1, v, p2 = self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT)
-            return Query(None, "Angle", (ObjectReference(p1.value), ObjectReference(v.value), ObjectReference(p2.value)))
+        
         else:
             raise SyntaxError(f'Unexpected token in expression: {tok}')
         
@@ -95,15 +112,16 @@ class Parser:
         astNodes = []
         
         while (tok := self.peek()) and tok.type != TokenType.EOF:
+            # Comments
             if tok.type == TokenType.HASH:
                 while (peek_tok := self.peek()) and peek_tok.type not in (TokenType.NEWLINE, TokenType.EOF):
                     self.advance()
+            # Newlines
             elif tok.type == TokenType.NEWLINE:
                 self.advance()
-            elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT]:
-                node = self.parseStatement()
-                astNodes.append(node)
-            elif tok.type == TokenType.KEYWORD:
+            
+            # Statements starting with Identifier/object/keyword
+            elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT, TokenType.KEYWORD, TokenType.ANGLE]:
                 node = self.parseStatement()
                 astNodes.append(node)
             else: 

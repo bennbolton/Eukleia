@@ -3,6 +3,7 @@ from builtinFuncs import *
 class Interpreter:
     def __init__(self):
         self.symbols = {}
+        self.constraints = []
         
     
     def run(self, nodes):
@@ -53,7 +54,8 @@ class Interpreter:
             else:
                 raise NameError(f"Unknown function '{node.function}'")
 
-        
+        elif isinstance(node, Constraint):
+            self.constraints.append(node)
         else:
             raise ValueError(f"Unknown AST Node type: {type(node)}. Node: {node}")
             
