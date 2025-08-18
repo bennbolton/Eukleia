@@ -24,6 +24,7 @@ def main():
     # --- Lexing ---
     lexer = Lexer(code)
     tokens = lexer.generate_tokens()
+    print(tokens)
     
     # --- Parsing ---
     parser = Parser(tokens)
@@ -33,10 +34,12 @@ def main():
         print(f'Parser error: {e}')
         sys.exit(1)
         
+    print(ast_nodes)
     interpreter = Interpreter()
     interpreter.run(ast_nodes)
     
-    print(interpreter.symbols['C'])
+    print("SYMBOLS:")
+    print(interpreter.symbols)
 
 if __name__ == "__main__":
     main()   

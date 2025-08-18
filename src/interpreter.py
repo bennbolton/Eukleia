@@ -14,18 +14,23 @@ class Interpreter:
         if isinstance(node, Number):
             return node
         
+        elif isinstance(node, tuple):
+            return BUILTINS.get("Point")(node)
+        
+        elif isinstance(node, Object):
+            return node
+        
         elif isinstance(node, ObjectDefinition):
             value = self.evaluate(node.value) if isinstance(node.value, ASTNode) else node.value
             self.symbols[node.name] = value
-            print(f"Defined object {node.name} = {node.value}")
+            # print(f"Defined object {node.name} = {node.value}")
         
         elif isinstance(node, VariableDefinition):
             if isinstance(node.value, Number):
                 self.symbols[node.name] = node.value
-                print(f"Defined variable {node.name} = {node.value}")
+                # print(f"Defined variable {node.name} = {node.value}")
             else:
                 value = self.evaluate(node.value)
-                print(value)
                 if isinstance(value, Object):
                     raise NameError(f"Variables cannot be Objects")
                 self.symbols[node.name] = value
@@ -41,7 +46,7 @@ class Interpreter:
             
             args = [self.evaluate(arg) if isinstance(arg, ASTNode) else arg for arg in node.args]
 
-            print(f"Query: {node.function}({', '.join(map(str, args))})")
+            # print(f"Query: {node.function}({', '.join(map(str, args))})")
             func = BUILTINS.get(node.function)
             if func:
                 return func(*args)
@@ -50,5 +55,5 @@ class Interpreter:
 
         
         else:
-            raise ValueError(f"Unknown AST Node type: {node}")
+            raise ValueError(f"Unknown AST Node type: {type(node)}. Node: {node}")
             

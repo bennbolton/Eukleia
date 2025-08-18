@@ -31,6 +31,14 @@ class Parser:
         # Assignment: x = 
         if nxt and nxt.type == TokenType.EQUALS and nxt.value == 1:
             return self.parseAssignment()
+        # Keyword: Circle
+        elif tok and tok.type == TokenType.KEYWORD:
+            return self.parseExpression()
+        # Line: AB
+        elif tok and tok.type == TokenType.OBJECT and nxt and nxt.type == TokenType.OBJECT:
+            return self.parseExpression()
+        elif tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT) and nxt and nxt.type == TokenType.LPAREN:
+            raise TypeError(f"{tok} is not callable")  
         
     def parseAssignment(self):
         assignTok = self.expect([TokenType.IDENTIFIER, TokenType.OBJECT])
@@ -69,11 +77,17 @@ class Parser:
             self.expect(TokenType.RPAREN)
             return Query(None, func_name, args)
         elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT]:
+            if tok.type == TokenType.OBJECT and self.peek().type == TokenType.OBJECT:
+                nxt = self.expect(TokenType.OBJECT)
+                return Query(None, "Line", (ObjectReference(tok.value), ObjectReference(nxt.value)))
             if tok.type == TokenType.OBJECT:
                 return ObjectReference(tok.value)
             elif tok.type == TokenType.IDENTIFIER:
                 return VariableReference(tok.value)
-
+        # "<" operator shorthand
+        elif tok.type == TokenType.ANGLE:
+            p1, v, p2 = self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT)
+            return Query(None, "Angle", (ObjectReference(p1.value), ObjectReference(v.value), ObjectReference(p2.value)))
         else:
             raise SyntaxError(f'Unexpected token in expression: {tok}')
         
@@ -86,8 +100,11 @@ class Parser:
             elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT]:
                 node = self.parseStatement()
                 astNodes.append(node)
-            else: 
+            elif tok.type == TokenType.KEYWORD:
                 node = self.parseStatement()
+                astNodes.append(node)
+            else: 
+                node = self.parseExpression()
                 astNodes.append(node)
         return astNodes
             

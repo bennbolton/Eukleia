@@ -14,17 +14,26 @@ class Lexer:
     KEYWORDS = {
         'Circle',
         'Line',
+        'Print',
+        'Angle',
+        'Type',
+        'Deg',
+        'Rad'
     }
     OPERATORS = {
-        '(': TokenType.LPAREN,
-        ')': TokenType.RPAREN,
-        ',': TokenType.COMMA,
         '?': TokenType.UNKNOWN,
         '@': TokenType.AT,
         '=': TokenType.EQUALS,
         '^': TokenType.CARAT,
         '*': TokenType.INTERSECT,
-        '#': TokenType.HASH
+        '<': TokenType.ANGLE
+
+    }
+    PUNCTUATION = {
+        '(': TokenType.LPAREN,
+        ')': TokenType.RPAREN,
+        ',': TokenType.COMMA,
+        '#': TokenType.HASH               
     }
     def __init__(self, text):
         self.text = text
@@ -74,12 +83,15 @@ class Lexer:
                 while ((nxt := self.peek()) and (nxt.isdigit() or nxt == '.')):
                     num += self.next_char()
                 tokens.append(Token(TokenType.NUMBER, float(num)))
+            # operators
             elif ch in self.OPERATORS:
                 occ = 1
                 while ((nxt := self.peek()) and nxt in self.OPERATORS and self.OPERATORS[ch] == self.OPERATORS[nxt]):
                     occ += 1
                     self.next_char()
                 tokens.append(Token(self.OPERATORS[ch], occ))
+            elif ch in self.PUNCTUATION:
+                tokens.append(Token(self.PUNCTUATION[ch], 1))
             else:
                 raise Exception(f'Unexpected character: {ch}')
         

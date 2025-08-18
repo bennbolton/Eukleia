@@ -14,6 +14,7 @@ class TokenType(Enum):
     SLASH = auto()   # Division Operator
     EQUALS = auto()   # Assignment Operator
     COMMA = auto()    # Comma
+    ANGLE = auto()
     UNKNOWN = auto()
     CARAT = auto()
     AT = auto()
