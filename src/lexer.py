@@ -23,17 +23,20 @@ class Lexer:
     OPERATORS = {
         '?': TokenType.UNKNOWN,
         '@': TokenType.AT,
-        '=': TokenType.EQUALS,
+        '=': TokenType.EQUALS_SINGLE,
+        '==': TokenType.EQUALS_DOUBLE,
         '^': TokenType.CARAT,
-        '*': TokenType.INTERSECT,
-        '<': TokenType.ANGLE
+        '*': TokenType.ASTERISK,
+        '<': TokenType.ANGLE,
+        '+': TokenType.PLUS
 
     }
     PUNCTUATION = {
         '(': TokenType.LPAREN,
         ')': TokenType.RPAREN,
         ',': TokenType.COMMA,
-        '#': TokenType.HASH               
+        '#': TokenType.HASH,
+        ':': TokenType.COLON           
     }
     def __init__(self, text):
         self.text = text
@@ -89,7 +92,10 @@ class Lexer:
                 while ((nxt := self.peek()) and nxt in self.OPERATORS and self.OPERATORS[ch] == self.OPERATORS[nxt]):
                     occ += 1
                     self.next_char()
-                tokens.append(Token(self.OPERATORS[ch], occ))
+                try:
+                    tokens.append(Token(self.OPERATORS[ch*occ], ch*occ))
+                except:
+                    raise SyntaxError("Too Many operators")
             elif ch in self.PUNCTUATION:
                 tokens.append(Token(self.PUNCTUATION[ch], 1))
             else:

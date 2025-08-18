@@ -12,7 +12,7 @@ class Interpreter:
             
     
     def evaluate(self, node):
-        if isinstance(node, Number):
+        if isinstance(node, NumberNode):
             return node
         
         elif isinstance(node, tuple):
@@ -27,7 +27,7 @@ class Interpreter:
             # print(f"Defined object {node.name} = {node.value}")
         
         elif isinstance(node, VariableDefinition):
-            if isinstance(node.value, Number):
+            if isinstance(node.value, NumberNode):
                 self.symbols[node.name] = node.value
                 # print(f"Defined variable {node.name} = {node.value}")
             else:
@@ -43,7 +43,7 @@ class Interpreter:
                 raise NameError(f"name: '{node.name}' is not defined")
             return self.evaluate(value)
         
-        elif isinstance(node, Query):
+        elif isinstance(node, QueryNode):
             
             args = [self.evaluate(arg) if isinstance(arg, ASTNode) else arg for arg in node.args]
 
@@ -54,7 +54,7 @@ class Interpreter:
             else:
                 raise NameError(f"Unknown function '{node.function}'")
 
-        elif isinstance(node, Constraint):
+        elif isinstance(node, ConstraintNode):
             self.constraints.append(node)
         else:
             raise ValueError(f"Unknown AST Node type: {type(node)}. Node: {node}")

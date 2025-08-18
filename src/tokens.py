@@ -10,9 +10,10 @@ class TokenType(Enum):
     RPAREN = auto()  # Right Parenthesis
     PLUS = auto()     # Plus Operator
     MINUS = auto()    # Minus Operator
-    INTERSECT = auto() # Multiplication Operator
+    ASTERISK = auto() # Multiplication Operator
     SLASH = auto()   # Division Operator
-    EQUALS = auto()   # Assignment Operator
+    EQUALS_SINGLE = auto()   # Assignment Operator
+    EQUALS_DOUBLE = auto()
     COMMA = auto()    # Comma
     ANGLE = auto()
     UNKNOWN = auto()
@@ -20,5 +21,6 @@ class TokenType(Enum):
     AT = auto()
     NEWLINE = auto()
     HASH = auto()
+    COLON = auto()
     
     EOF = auto()

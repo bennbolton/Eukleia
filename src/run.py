@@ -32,8 +32,8 @@ def main():
     try:
         ast_nodes = parser.parseTokens()
     except Exception as e:
-        printout(f'Parser error: {e}')
-        sys.exit(1)
+        # printout(f'Parser error: {e
+        raise e
         
     print(ast_nodes)
     interpreter = Interpreter()

@@ -2,131 +2,176 @@ from tokens import TokenType
 from AST import *
 
 class Parser:
-    CONSTRAINTOPERATORS = [TokenType.SLASH, TokenType.AT, TokenType.EQUALS]
+    OPERATOR_PRECEDENCE = {
+        "==": 1,
+        "+": 10,
+        "-": 10,
+        "*": 20,
+        "/": 20
+    }
+    OPERATORS = {TokenType.PLUS, TokenType.MINUS, TokenType.SLASH, TokenType.ASTERISK}
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
-        
+
     def peek(self, offset=0):
         if self.pos + offset >= len(self.tokens):
             return None
         return self.tokens[self.pos + offset]
-    
+
     def advance(self):
         token = self.peek()
         if token is not None:
             self.pos += 1
         return token
-    
+
     def expect(self, tType, value=None):
-        if type(tType) not in [list, dict, tuple]:
+        if type(tType) not in [list, tuple]:
             tType = [tType]
         token = self.advance()
-        if not token or token.type not in tType or (value and token.value != value):
-            raise SyntaxError(f'Expected token {tType}, got {token}')
+        if not token or token.type not in tType or (value is not None and token.value != value):
+            raise SyntaxError(f'Expected token {tType} with value {value}, got {token}')
         return token
-    
+
+    def parseTokens(self):
+        astNodes = []
+        while (tok := self.peek()) and tok.type != TokenType.EOF:
+            # Skip comments
+            if tok.type == TokenType.HASH:
+                while (peek_tok := self.peek()) and peek_tok.type not in (TokenType.NEWLINE, TokenType.EOF):
+                    self.advance()
+                self.advance()  # consume newline or EOF after comment
+                continue
+            # Skip newlines
+            if tok.type == TokenType.NEWLINE:
+                self.advance()
+                continue
+            # Parse statements
+            node = self.parseStatement()
+            if node is not None:
+                astNodes.append(node)
+        return astNodes
+
     def parseStatement(self):
+        # Placeholder for statement parsing logic
+        # This method should detect and parse:
+        # VariableDefinition, ObjectDefinition, Constraint, QueryStatement, ShorthandDefinition, etc.
+        # For now, we parse an expression as a statement
         tok = self.peek()
-        nxt = self.peek(1)
-        # Assignment: x = 
-        if nxt and nxt.type == TokenType.EQUALS and nxt.value == 1:
-            return self.parseAssignment()
-        # Keyword: Circle
-        elif tok and tok.type == TokenType.KEYWORD:
-            return self.parseExpression()
-        # Constraint: AB // CD
-        elif nxt and nxt.type in self.CONSTRAINTOPERATORS and nxt.value == 2:
-            print("ehh")
-            left = self.parseExpression()
+        if tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT):
+            next_tok = self.peek(1)
+            if next_tok and next_tok.type in (TokenType.EQUALS_SINGLE, TokenType.EQUALS_DOUBLE): # expand for all double constraint operators
+                identifier_token = self.advance()
+                self.advance()
+                rhs_expr = self.parseExpression()
+                if next_tok.type == TokenType.EQUALS_SINGLE:
+                    if identifier_token.type == TokenType.IDENTIFIER:
+                        return VariableDefinition(identifier_token.value, rhs_expr)
+                    else:
+                        return ObjectDefinition(identifier_token.value, rhs_expr)
+                else:
+                    return ConstraintNode(identifier_token.value, next_tok.value, rhs_expr)
+                                
+        # expr = self.parseExpression()
+        # Here you would add logic to distinguish statements from expressions,
+        # and construct appropriate AST nodes like VariableDefinition, Constraint, etc.
+        # return expr
+
+    def parseExpression(self, precedence=0):
+        # Placeholder for expression parsing logic
+        # This method should handle parsing of expressions including:
+        # BinaryOp, FunctionCall, AngleNode, LineNode, CircleNode, etc.
+        # For now, simply parse a primary expression
+        left = self.parsePrimary()
+        
+        while True:
+            op_tok = self.peek()
+            if not op_tok or op_tok.type not in self.OPERATORS:
+                break
+            op_precedence = self.OPERATOR_PRECEDENCE[op_tok.value]
+            if op_precedence < precedence:
+                break
+            self.advance()
+            right = self.parseExpression(op_precedence + 1)
+            left = BinaryOp(left, op_tok.value, right)
             
-            op = self.expect(self.CONSTRAINTOPERATORS, 2)
-            right = self.parseExpression()
-            return Constraint(left, op, right)
-        # Line: AB
-        elif tok and tok.type == TokenType.OBJECT and nxt and nxt.type == TokenType.OBJECT:
-            return self.parseExpression()
-        # "<" operator shorthand
-        elif tok and tok.type == TokenType.ANGLE:
-            self.expect(TokenType.ANGLE)
-            p1, v, p2 = self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT), self.expect(TokenType.OBJECT)
-            angle = Query(None, "Angle", (ObjectReference(p1.value), ObjectReference(v.value), ObjectReference(p2.value)))
-            if (peek_tok := self.peek()) and peek_tok.type in self.CONSTRAINTOPERATORS and peek_tok.value == 2:
-                op = self.expect(self.CONSTRAINTOPERATORS, 2)
-                right = self.parseExpression()
-                return Constraint(angle, op, right)
+        # Placeholder for binary operator parsing (e.g., constraints, assignments)
+        # while next token is an operator:
+        #     op = self.expect operator
+        #     right = self.parsePrimary()
+        #     left = BinaryOp(left, op, right)
+
+        return left
+
+    def parsePrimary(self):
+        # Placeholder for primary expression parsing
+        # This method should parse:
+        # Number, Unknown, VariableReference, ObjectReference, PointNode, etc.
+        tok = self.peek()
+        if tok is None:
+            raise SyntaxError("Unexpected end of input")
+
+        if tok.type == TokenType.NUMBER:
+            self.advance()
+            return NumberNode(tok.value)
+        elif tok.type == TokenType.UNKNOWN:
+            self.advance()
+            return UnknownNode()
+        elif tok.type == TokenType.IDENTIFIER:
+            self.advance()
+            # Could be VariableReference or FunctionCall
+            # Placeholder logic:
+            if (next_tok := self.peek()) and next_tok.type == TokenType.LPAREN:
+                # Parse function call
+                self.advance()  # consume LPAREN
+                args = []
+                while (arg_tok := self.peek()) and arg_tok.type != TokenType.RPAREN:
+                    if arg_tok.type == TokenType.COMMA:
+                        self.advance()
+                        continue
+                    args.append(self.parseExpression())
+                self.expect(TokenType.RPAREN)
+                return QueryNode(tok.value, args)
             else:
-                return angle
-        elif tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT) and nxt and nxt.type == TokenType.LPAREN:
-            raise TypeError(f"{tok} is not callable")  
-        
-    def parseAssignment(self):
-        assignTok = self.expect([TokenType.IDENTIFIER, TokenType.OBJECT])
-        self.expect(TokenType.EQUALS, 1)
-        value = self.parseExpression()
-        if assignTok.type == TokenType.OBJECT:
-            return ObjectDefinition(assignTok.value, value)
-        elif assignTok.type == TokenType.IDENTIFIER:
-            return VariableDefinition(assignTok.value, value)
-    
-        
-    def parseExpression(self):
-        tok = self.advance()
-        if tok.type == TokenType.UNKNOWN:
-            return Unknown()
-        elif tok.type == TokenType.NUMBER:
-            return Number(tok.value)
+                return VariableReference(tok.value)
+        elif tok.type == TokenType.OBJECT:
+            self.advance()
+            # Could be ObjectReference or more complex structure like LineNode
+            # AB line shorthand
+            if (next_tok := self.peek()) and next_tok.type == TokenType.OBJECT:
+                second_tok = self.advance()
+                return LineNode(ObjectReference(tok.value), ObjectReference(second_tok.value))
+            else:
+                return ObjectReference(tok.value)
         elif tok.type == TokenType.LPAREN:
-            # non keyword brackets
-            # very strict, be better later
+            self.advance()
+            # Parse point or grouped expression
+            # Placeholder: parse two numbers separated by comma
             x_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
             self.expect(TokenType.COMMA)
             y_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
             self.expect(TokenType.RPAREN)
-            return (x_tok.value if x_tok.type == TokenType.NUMBER else Unknown, y_tok.value if y_tok.type == TokenType.NUMBER else Unknown())
+            x_val = x_tok.value if x_tok.type == TokenType.NUMBER else UnknownNode()
+            y_val = y_tok.value if y_tok.type == TokenType.NUMBER else UnknownNode()
+            return PointNode(x_val, y_val)
         elif tok.type == TokenType.KEYWORD:
-            # function call from keyword
-            func_name = tok.value
+            self.advance()
+            # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
+            # Placeholder logic: parse function call style
             self.expect(TokenType.LPAREN)
             args = []
-            while (peek_tok := self.peek()) and peek_tok.type != TokenType.RPAREN:
-                if peek_tok.type == TokenType.COMMA:
-                    self.expect(TokenType.COMMA)
-                else:
-                    args.append(self.parseExpression())
-            self.expect(TokenType.RPAREN)
-            return Query(None, func_name, args)
-        elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT]:
-            if tok.type == TokenType.OBJECT and self.peek().type == TokenType.OBJECT:
-                nxt = self.expect(TokenType.OBJECT)
-                return Query(None, "Line", (ObjectReference(tok.value), ObjectReference(nxt.value)))
-            if tok.type == TokenType.OBJECT:
-                return ObjectReference(tok.value)
-            elif tok.type == TokenType.IDENTIFIER:
-                return VariableReference(tok.value)
-        
-        else:
-            raise SyntaxError(f'Unexpected token in expression: {tok}')
-        
-    def parseTokens(self):
-        astNodes = []
-        
-        while (tok := self.peek()) and tok.type != TokenType.EOF:
-            # Comments
-            if tok.type == TokenType.HASH:
-                while (peek_tok := self.peek()) and peek_tok.type not in (TokenType.NEWLINE, TokenType.EOF):
+            while (arg_tok := self.peek()) and arg_tok.type != TokenType.RPAREN:
+                if arg_tok.type == TokenType.COMMA:
                     self.advance()
-            # Newlines
-            elif tok.type == TokenType.NEWLINE:
-                self.advance()
-            
-            # Statements starting with Identifier/object/keyword
-            elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT, TokenType.KEYWORD, TokenType.ANGLE]:
-                node = self.parseStatement()
-                astNodes.append(node)
-            else: 
-                node = self.parseExpression()
-                astNodes.append(node)
-        return astNodes
-            
-                
+                    continue
+                args.append(self.parseExpression())
+            self.expect(TokenType.RPAREN)
+            # Example for CircleNode
+            if tok.value == "Circle":
+                return CircleNode(args)
+            elif tok.value == "Angle":
+                return AngleNode(args)
+            else:
+                return QueryNode(tok.value, args)
+        else:
+            raise SyntaxError(f"Unexpected token {tok} in primary expression")

@@ -2,13 +2,13 @@ class ASTNode:
     pass
 
 # Expressions
-class Number(ASTNode):
+class NumberNode(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
         return str(round(self.value, 2))
     
-class Unknown(Number):
+class UnknownNode(NumberNode):
     def __init__(self):
         self.value = '?'
     def __repr__(self):
@@ -32,6 +32,9 @@ class ObjectNode(ASTNode):
         self.args = args
         pass
     
+    def __repr__(self):
+        return f"{type(self).__name__}({', '.join(map(str, self.args))})"
+    
 class PointNode(ObjectNode):
     pass
 
@@ -49,7 +52,7 @@ class ObjectDefinition(ASTNode):
         self.name = name
         self.value = value
     def __repr__(self):
-        return f'{self.name} = {self.value}'
+        return f'{type(self).__name__}({self.name}, {self.value})'
 
 
 class VariableDefinition(ASTNode):
@@ -57,17 +60,19 @@ class VariableDefinition(ASTNode):
         self.name = name
         self.value = value
     def __repr__(self):
-        return f'{self.name} = {self.value}'
+        return f'{type(self).__name__}({self.name}, {self.value})'
     
 
-class Constraint(ASTNode):
+class ConstraintNode(ASTNode):
     def __init__(self, left, operator, right):
         self.left = left        # could be line or length
         self.operator = operator
         self.right = right
+    def __repr__(self):
+        return f"{type(self).__name__}({self.left}, {self.operator}, {self.right})"
         
 
-class Query(ASTNode):
+class QueryNode(ASTNode):
     def __init__(self, name, function, args):
         self.name = name        # variable to store result
         self.function = function
@@ -80,3 +85,6 @@ class BinaryOp(ASTNode):
         self.left = left
         self.op = op
         self.right = right
+    
+    def __repr__(self):
+        return f"{type(self).__name__}({self.left}, {self.op}, {self.right})"
