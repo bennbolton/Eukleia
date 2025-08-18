@@ -3,6 +3,7 @@ import sys
 from lexer import Lexer
 from parser import Parser
 from interpreter import Interpreter
+from builtinFuncs import printout
 
 def main():
 
@@ -18,7 +19,7 @@ def main():
         with open(filename, 'r') as f:
             code = f.read()
     except FileNotFoundError:
-        print(f'File not found: {filename}')
+        printout(f'File not found: {filename}')
         sys.exit(1)
         
     # --- Lexing ---
@@ -31,7 +32,7 @@ def main():
     try:
         ast_nodes = parser.parseTokens()
     except Exception as e:
-        print(f'Parser error: {e}')
+        printout(f'Parser error: {e}')
         sys.exit(1)
         
     print(ast_nodes)

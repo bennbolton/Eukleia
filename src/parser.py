@@ -54,7 +54,7 @@ class Parser:
         tok = self.advance()
         if tok.type == TokenType.UNKNOWN:
             return Unknown()
-        if tok.type == TokenType.NUMBER:
+        elif tok.type == TokenType.NUMBER:
             return Number(tok.value)
         elif tok.type == TokenType.LPAREN:
             # non keyword brackets
@@ -95,7 +95,10 @@ class Parser:
         astNodes = []
         
         while (tok := self.peek()) and tok.type != TokenType.EOF:
-            if tok.type == TokenType.NEWLINE:
+            if tok.type == TokenType.HASH:
+                while (peek_tok := self.peek()) and peek_tok.type not in (TokenType.NEWLINE, TokenType.EOF):
+                    self.advance()
+            elif tok.type == TokenType.NEWLINE:
                 self.advance()
             elif tok.type in [TokenType.IDENTIFIER, TokenType.OBJECT]:
                 node = self.parseStatement()

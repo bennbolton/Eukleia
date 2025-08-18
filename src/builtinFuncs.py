@@ -31,9 +31,9 @@ def make_line(*args):
     if all(isinstance(a, Point) for a in args):
         return Line(points=args)
     
-def get_angle(*args):
+def make_angle(*args):
     if len(args) == 3 and all(isinstance(a, Point) for a in args):
-        return Number(angle_from_three_points(*args))
+        return Angle(points=args).value
 
 def get_type(*args):
     if len(args) == 1:
@@ -54,18 +54,18 @@ def rad2deg(*args):
     if len(args) == 1 and isinstance(args[0], Number):
         return Number(math.degrees(args[0].value))
     else:
-        raise TypeError(f"Deg only takes 1 positional argument, got {len(args)}")
+        raise TypeError(f"Deg only takes 1 positional argument of type Number, got {len(args)}")
     
 def deg2rad(*args):
     if len(args) == 1 and isinstance(args[0], Number):
         return Number(math.radians(args[0].value))
     else:
-        raise TypeError(f"Rad only takes 1 positional argument, got {len(args)}")
+        raise TypeError(f"Rad only takes 1 positional argument of type Number, got {len(args)}")
     
 
 BUILTINS = {
     "Circle": make_circle,
-    "Angle": get_angle,
+    "Angle": make_angle,
     "Point": make_point,
     "Type": get_type,
     "Print": printout,
