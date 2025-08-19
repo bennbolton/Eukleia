@@ -1,5 +1,7 @@
-from AST import *
-from builtinFuncs import *
+from .astNodes import *
+from .builtinFuncs import *
+from .solver import Solver
+
 class Interpreter:
     
     BINARY_OPS = {
@@ -9,8 +11,7 @@ class Interpreter:
         '/': lambda a,b: Number(a / b),
     }
     def __init__(self):
-        self.symbols = {}
-        self.constraints = []
+        pass
         
     
     def run(self, nodes):
@@ -58,8 +59,8 @@ class Interpreter:
         elif isinstance(node, (ObjectReference, VariableReference)):
             value = self.symbols.get(node.name)
             if value is None:
-                self.symbols[node.name] = Point(ident = node.name)
-                return self.symbols[node.name]
+                self.symbols[node.name] = node
+                return node
             return self.evaluate(value)
            
         # -- Keywords 
@@ -67,7 +68,7 @@ class Interpreter:
             evaluated_args = []
             for arg in node.args:
                 evaluated_args.append(self.evaluate(arg))
-            return type(node).func(*evaluated_args, ident=node.name)
+            return type(node).func(*evaluated_args)
         
         elif isinstance(node, BinaryOp):
             left = self.evaluate(node.left)

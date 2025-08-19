@@ -1,9 +1,9 @@
 # main.py
 import sys
-from lexer import Lexer
-from parser import Parser
-from interpreter import Interpreter
-from builtinFuncs import printout
+from src.lexer import Lexer
+from src.parser import Parser
+from src.interpreter import Interpreter
+from src.builtinFuncs import printout
 
 def main():
 

@@ -1,4 +1,5 @@
-from helperFuncs import *
+from .helperFuncs import *
+from sympy import Symbol
 
 class EklPrim:
     pass
@@ -7,9 +8,8 @@ class Object(EklPrim):
     pass
 
 class Number(Object):
-    def __init__(self, value, ident=None):
+    def __init__(self, value):
         self.value = value
-        self.ident = ident
         
     def __add__(self, other):
         if isinstance(other, Number):
@@ -39,19 +39,17 @@ class Number(Object):
         return str(self.value)
         
 class Unknown(Number):
-    def __init__(self, ident=None):
+    def __init__(self):
         self.value = '?'
-        self.ident = ident
     
     def __repr__(self):
         return '?'
 
 class Point(Object):
     name = "Point"
-    def __init__(self, x='?', y='?', ident=None):
+    def __init__(self, x='?', y='?'):
         self.x = x
         self.y = y
-        self.ident = ident
         
         self.defined = self.isDefined()
         
@@ -64,10 +62,9 @@ class Point(Object):
 
 class Line(Object):
     name = "Line"
-    def __init__(self, *, points=None, grad=None, ident=None):
+    def __init__(self, *, points=None, grad=None):
         self.grad = grad
         self.points = points
-        self.ident = ident
         
         self.evaluate()
         self.defined = self.isDefined()
@@ -122,16 +119,15 @@ class Line(Object):
                     return abs(point.y - expected_y) < tol
         return False
     
-    def __repr__(self):
-        return f"{''.join([p.ident for p in self.points])}"
+    # def __repr__(self):
+    #     pass
     
 
 class Angle(Object):
     name = "Angle"
-    def __init__(self, points=None, lines=None, ident=None):
+    def __init__(self, points=None, lines=None):
         self.points = points
         self.lines = lines
-        self.ident = ident
         
         self.defined = self.isDefined()
         self.value = self.calc()
@@ -152,16 +148,15 @@ class Angle(Object):
         elif self.points and len(self.points) == 3 and self.isDefined():
             return angle_from_three_points(self.points[0], self.points[1], self.points[2])
         
-    def __repr__(self):
-        return f"<{''.join([p.ident for p in self.points])}"
+    # def __repr__(self):
+    #     pass
 
         
 class Circle(Object):
     name = "Circle"
-    def __init__(self, *, center=None, radius=None, points=None, ident=None):
+    def __init__(self, *, center=None, radius=None, points=None):
         self.center = center
         self.radius = radius
-        self.ident = ident
         
         self.points = points
         self.evaluate()

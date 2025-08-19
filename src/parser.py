@@ -1,5 +1,5 @@
-from tokens import TokenType
-from AST import *
+from .tokens import TokenType
+from .astNodes import *
 
 class Parser:
     OPERATOR_PRECEDENCE = {

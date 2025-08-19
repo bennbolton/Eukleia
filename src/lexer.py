@@ -1,6 +1,4 @@
-import re
-from tokens import TokenType
-import parser
+from .tokens import TokenType
 
 class Token:
     def __init__(self, tType, value=None):

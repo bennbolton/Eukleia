@@ -1,34 +1,34 @@
-from geometry import *
-from AST import *
+from .geometry import *
+from .astNodes import *
 import math
 
-def make_number(*args, ident=None):
+def make_number(*args):
     # Number
     if len(args) == 1 and isinstance(args[0], (int, float)):
-        return Number(args[0], ident=ident)
+        return Number(args[0])
     # Unknown or inf
     elif len(args) == 1 and isinstance(args[0], str):
         if args[0] == '?':
-            return make_unknown(ident=ident)
+            return make_unknown()
         elif args[0] == 'inf':
-            return Number(args[0], ident=ident)
+            return Number(args[0])
 
-def make_unknown(*args, ident=None):
-    return Unknown(ident=ident)
+def make_unknown(*args):
+    return Unknown()
 
-def make_circle(*args, ident=None):
+def make_circle(*args):
     # Circle(x, y, r)
     if len(args) == 3 and all(isinstance(a, Number) for a in args):
         x, y, r = args
-        return Circle(center=Point(x, y), radius=r, ident=ident)
+        return Circle(center=Point(x, y), radius=r)
     
     # Circle(O, r)
     elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], Number):
         center, r = args
-        return Circle(center=center, radius=r.value, ident=ident)
+        return Circle(center=center, radius=r.value)
     
     elif len(args) >= 3 and all(isinstance(a, Point) for a in args):
-        return Circle(points=args, ident=ident)
+        return Circle(points=args)
     
     else:
         raise TypeError("Unknown argument arrangement for Circle()")
@@ -41,13 +41,13 @@ def make_point(*args, ident=None):
     else:
         raise TypeError("Unknown argument arrangement for Point()")
     
-def make_line(*args, ident=None):
+def make_line(*args):
     if all(isinstance(a, Point) for a in args):
-        return Line(points=args, ident=ident)
+        return Line(points=args)
     
 def make_angle(*args, ident=None):
     if len(args) == 3 and all(isinstance(a, Point) for a in args):
-        return Angle(points=args, ident=ident).value
+        return Angle(points=args).value
 
 def get_type(*args):
     if len(args) == 1:

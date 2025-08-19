@@ -1,4 +1,5 @@
-from builtinFuncs import *
+from .builtinFuncs import *
+
 class ASTNode:
     def __init__(self, *args):
         self.args = args

@@ -1,5 +1,5 @@
 import math
-from geometry import *
+from .geometry import *
 
 def circle_from_three_points(A, B, C):
     """
