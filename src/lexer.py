@@ -37,7 +37,9 @@ class Lexer:
         ')': TokenType.RPAREN,
         ',': TokenType.COMMA,
         '#': TokenType.HASH,
-        ':': TokenType.COLON           
+        ':': TokenType.COLON,
+        '.': TokenType.DOT,
+        '...': TokenType.ELLIPSIS    
     }
     def __init__(self, text):
         self.text = text

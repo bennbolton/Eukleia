@@ -7,14 +7,11 @@ def make_number(*args):
     if len(args) == 1 and isinstance(args[0], (int, float)):
         return Number(args[0])
     # Unknown or inf
-    elif len(args) == 1 and isinstance(args[0], str):
-        if args[0] == '?':
-            return make_unknown()
-        elif args[0] == 'inf':
-            return Number(args[0])
+    elif len(args) == 1 and args[0] is None:
+        return Number(None)
+    elif args[0] == 'inf':
+        return Number(args[0])
 
-def make_unknown(*args):
-    return Unknown()
 
 def make_circle(*args):
     # Circle(x, y, r)
@@ -35,9 +32,9 @@ def make_circle(*args):
 
 def make_point(*args, ident=None):
     if len(args) == 1 and isinstance(args[0], tuple):
-        return Point(args[0][0], args[0][1], ident=ident)
+        return Point(args[0][0], args[0][1])
     elif len(args) == 2 and all(isinstance(a, Number) for a in args):
-        return Point(args[0], args[1], ident=ident)
+        return Point(args[0], args[1])
     else:
         raise TypeError("Unknown argument arrangement for Point()")
     
@@ -45,7 +42,8 @@ def make_line(*args):
     if all(isinstance(a, Point) for a in args):
         return Line(points=args)
     
-def make_angle(*args, ident=None):
+def make_angle(*args):
+    print([type(a) for a in args])
     if len(args) == 3 and all(isinstance(a, Point) for a in args):
         return Angle(points=args).value
 

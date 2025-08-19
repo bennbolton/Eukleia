@@ -58,6 +58,19 @@ class Parser:
         left_expr = self.parseExpression()
         tok = self.peek()
         
+        if tok and tok.type == TokenType.COMMA:
+            items = [left_expr]
+            self.expect(TokenType.COMMA)
+            if (next_tok := self.peek()) and next_tok.type not in self.DEF_AND_CON:
+                items.append(self.parseExpression(0))
+                while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+                    self.expect(TokenType.COMMA)
+                    items.append(self.parseExpression(0))
+            left_expr = CollectionNode(items)
+            
+        tok = self.peek()
+        
+        
         if tok and tok.type in self.DEF_AND_CON:
             op_tok = self.advance()
             rhs_expr = self.parseExpression()
@@ -74,21 +87,9 @@ class Parser:
             
 
     def parseExpression(self, precedence=0):
-        # Placeholder for expression parsing logic
-        # This method should handle parsing of expressions including:
-        # BinaryOp, FunctionCall, AngleNode, LineNode, CircleNode, etc.
-        # For now, simply parse a primary expression
         left = self.parsePrimary()
         
-        
-        
-        # Check for a comma immediately after a primary expression
-        if (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
-            exprs = [left]
-            while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
-                self.advance()  # consume comma
-                exprs.append(self.parseExpression())  # parse each element as a primary
-            left = CollectionNode(exprs)  # wrap into a collection node
+
         
         
         
@@ -118,21 +119,21 @@ class Parser:
             return NumberNode(tok.value)
         elif tok.type == TokenType.UNKNOWN:
             self.advance()
-            return UnknownNode()
+            return NumberNode(None)
         elif tok.type == TokenType.IDENTIFIER:
             self.advance()
             # Could be VariableReference or FunctionCall
             # Placeholder logic:
             if (next_tok := self.peek()) and next_tok.type == TokenType.LPAREN:
                 # Parse function call
-                self.advance()  # consume LPAREN
-                args = []
-                while (arg_tok := self.peek()) and arg_tok.type != TokenType.RPAREN:
-                    if arg_tok.type == TokenType.COMMA:
-                        self.advance()
-                        continue
-                    args.append(self.parseExpression())
-                self.expect(TokenType.RPAREN)
+                self.expect(TokenType.LPAREN)  # consume LPAREN
+                args = []  
+                if next_tok := self.peek() and next_tok.type != TokenType.RPAREN:
+                    args.append(self.parseExpression(0))
+                    while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+                        self.expect(TokenType.COMMA)
+                        args.append(self.parseExpression(0))
+                    self.expect(TokenType.RPAREN)
                 return QueryNode(tok.value, args)
             else:
                 return VariableReference(tok.value)
@@ -147,21 +148,33 @@ class Parser:
                 return ObjectReference(tok.value)
         elif tok.type == TokenType.LPAREN:
             self.expect(TokenType.LPAREN)
-            expr = self.parseExpression()
+            
+            items = []
+            if (next_tok := self.peek()) and next_tok.type != TokenType.RPAREN:
+                items.append((self.parseExpression(0)))
+                while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+                    self.expect(TokenType.COMMA)
+                    items.append(self.parseExpression(0))
             self.expect(TokenType.RPAREN)
-            print(expr)
-            if isinstance(expr, CollectionNode) and len(expr) == 2:
-                return PointNode(expr.items[0], expr.items[1])
+            if len(items) == 1:
+                return items[0]
+            elif len(items) == 2:
+                return PointNode(items[0], items[1])
             else:
-                return expr
+                raise ValueError("Too many items for Point")
             
         elif tok.type == TokenType.KEYWORD:
             self.advance()
             # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
             self.expect(TokenType.LPAREN)
-            args = self.parseExpression()
-            if isinstance(args, CollectionNode):
-                args = args.items
+            args = []  
+            if next_tok := self.peek() and next_tok.type != TokenType.RPAREN:
+                args.append(self.parseExpression(0))
+                while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+                    self.expect(TokenType.COMMA)
+                    args.append(self.parseExpression(0))
+                self.expect(TokenType.RPAREN)
+                
             self.expect(TokenType.RPAREN)
             # Example for CircleNode
             if tok.value == "Circle":

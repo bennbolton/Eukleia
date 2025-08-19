@@ -5,6 +5,8 @@ class TokenType(Enum):
     IDENTIFIER = auto()
     OBJECT = auto()
     KEYWORD = auto()
+    DOT = auto()
+    ELLIPSIS = auto()
     NUMBER = auto()
     LPAREN = auto()  # Left Parenthesis
     RPAREN = auto()  # Right Parenthesis

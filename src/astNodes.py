@@ -10,14 +10,8 @@ class NumberNode(ASTNode):
     def __init__(self, value):
         self.value = value
     def __repr__(self):
-        return str(round(self.value, 2))
+        return f"{type(self).__name__}({self.value if self.value is not None else '?'})"
     
-class UnknownNode(NumberNode):
-    func = make_unknown
-    def __init__(self):
-        self.value = '?'
-    def __repr__(self):
-        return '?'
 
 class VariableReference(ASTNode):
     def __init__(self, name):

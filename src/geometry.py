@@ -1,5 +1,6 @@
 from .helperFuncs import *
 from sympy import Symbol
+from uuid import uuid4
 
 class EklPrim:
     pass
@@ -8,8 +9,13 @@ class Object(EklPrim):
     pass
 
 class Number(Object):
+    unknownCount = 0
     def __init__(self, value):
-        self.value = value
+        if value is None:
+            self.value = Symbol('?' + str(self.unknownCount))
+            Number.unknownCount += 1
+        else:
+            self.value = value
         
     def __add__(self, other):
         if isinstance(other, Number):
@@ -29,7 +35,7 @@ class Number(Object):
         else:
             return self.value * other
         
-    def __div__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, Number):
             return self.value / other.value
         else:
@@ -37,13 +43,6 @@ class Number(Object):
         
     def __repr__(self):
         return str(self.value)
-        
-class Unknown(Number):
-    def __init__(self):
-        self.value = '?'
-    
-    def __repr__(self):
-        return '?'
 
 class Point(Object):
     name = "Point"

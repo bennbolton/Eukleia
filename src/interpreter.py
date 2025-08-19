@@ -10,7 +10,8 @@ class Interpreter:
         '*': lambda a,b: Number(a * b),
         '/': lambda a,b: Number(a / b),
     }
-    def __init__(self):
+    def __init__(self, solver):
+        self.solver = solver
         pass
         
     
@@ -46,21 +47,22 @@ class Interpreter:
                         raise ValueError(f"Mismatched Collection Sizes: {len(ident)} and {len(value)}")
                 # Collection = value
                 else:
-                    for i in range(len(ident)):
-                        self.evaluate(ObjectDefinition(ident.items[i], value))
+                    self.evaluate(ObjectDefinition(ident.items[0], value))
+                    for i in range(len(ident)-1):
+                        fresh_value = self.evaluate(node.value)
+                        self.evaluate(ObjectDefinition(ident.items[i+1], fresh_value))
             # Obj = Collection
             elif isinstance(value, CollectionNode):
-                self.symbols[ident] = Collection(value.items)
+                self.solver.add_object(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                self.symbols[ident] = value
+                self.solver.add_object(ident, value)
         
         # -- Object/Variable Reference
         elif isinstance(node, (ObjectReference, VariableReference)):
-            value = self.symbols.get(node.name)
+            value = self.solver.objects.get(node.name)
             if value is None:
-                self.symbols[node.name] = node
-                return node
+                return node.name
             return self.evaluate(value)
            
         # -- Keywords 
@@ -79,13 +81,13 @@ class Interpreter:
         
         # -- Collections
         elif isinstance(node, CollectionNode):
-            pass
+            return node
     
         # -- Constraints
         elif isinstance(node, ConstraintNode):
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
-            self.constraints.append(Constraint(left, node.operator, right))
+            self.solver.constraints.append(Constraint(left, node.operator, right))
         
         
         else:

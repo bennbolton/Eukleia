@@ -3,6 +3,7 @@ import sys
 from src.lexer import Lexer
 from src.parser import Parser
 from src.interpreter import Interpreter
+from src.solver import Solver
 from src.builtinFuncs import printout
 
 def main():
@@ -22,6 +23,9 @@ def main():
         printout(f'File not found: {filename}')
         sys.exit(1)
         
+    
+
+        
     # --- Lexing ---
     lexer = Lexer(code)
     tokens = lexer.generate_tokens()
@@ -36,13 +40,20 @@ def main():
         raise e
     print("NODES:")
     print(ast_nodes)
-    interpreter = Interpreter()
+    
+    # --- Interpreting ---
+    solver = Solver()
+    interpreter = Interpreter(solver)
     interpreter.run(ast_nodes)
     
-    print("SYMBOLS:")
-    print(interpreter.symbols)
+    # --- Solving ---
+    print("OBJECTS:")
+    print(solver.objects)
+    print("VARIABLES:")
+    print(solver.variables)
     print("CONSTRAINTS:")
-    print(interpreter.constraints)
+    print(solver.constraints)
+    
 
 if __name__ == "__main__":
     main()   
