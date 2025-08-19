@@ -9,7 +9,8 @@ class Parser:
         "*": 20,
         "/": 20
     }
-    OPERATORS = {TokenType.PLUS, TokenType.MINUS, TokenType.SLASH, TokenType.ASTERISK}
+    BINARY_OPERATORS = {TokenType.PLUS, TokenType.MINUS, TokenType.SLASH, TokenType.ASTERISK}
+    DEF_AND_CON = {TokenType.PARALLEL, TokenType.EQUALS_DOUBLE, TokenType.EQUALS_SINGLE}
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
@@ -49,33 +50,70 @@ class Parser:
             # Parse statements
             node = self.parseStatement()
             if node is not None:
-                astNodes.append(node)
+                if isinstance(node, list):
+                    astNodes.extend(node)
+                else:
+                    astNodes.append(node)
         return astNodes
 
     def parseStatement(self):
-        # Placeholder for statement parsing logic
-        # This method should detect and parse:
         # VariableDefinition, ObjectDefinition, Constraint, QueryStatement, ShorthandDefinition, etc.
-        # For now, we parse an expression as a statement
         tok = self.peek()
+        
         if tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT):
-            next_tok = self.peek(1)
-            if next_tok and next_tok.type in (TokenType.EQUALS_SINGLE, TokenType.EQUALS_DOUBLE): # expand for all double constraint operators
-                identifier_token = self.advance()
-                self.advance()
+            id_tokens = []
+            while True:
+                current_tok = self.peek()
+                if current_tok and current_tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT):
+                    id_tokens.append(self.advance())
+                    
+                    next_tok = self.peek()
+                    if next_tok and next_tok.type == TokenType.COMMA:
+                        self.expect(TokenType.COMMA)
+                        continue
+                    elif next_tok and next_tok.type == TokenType.COLON:
+                        self.expect(TokenType.COLON)
+                        break
+                    else:
+                        break
+                else:
+                    break
+            
+            if id_tokens and self.peek(-1) and self.peek(-1).type == TokenType.COLON:
                 rhs_expr = self.parseExpression()
-                if next_tok.type == TokenType.EQUALS_SINGLE:
+                nodes = []
+                for id_tok in id_tokens:
+                    if id_tok.type == TokenType.IDENTIFIER:
+                        nodes.append(VariableDefinition(id_tok.value, rhs_expr))
+                    else:
+                        nodes.append(ObjectDefinition(id_tok.value, rhs_expr))
+                return nodes
+                
+                
+            next_tok = self.peek()
+            # Definitions and Constraints
+            if len(id_tokens) == 1 and next_tok and next_tok.type in self.DEF_AND_CON:
+                identifier_token = id_tokens[0]
+                op_tok = self.advance()
+                rhs_expr = self.parseExpression()
+                if op_tok.type == TokenType.EQUALS_SINGLE:
                     if identifier_token.type == TokenType.IDENTIFIER:
                         return VariableDefinition(identifier_token.value, rhs_expr)
                     else:
                         return ObjectDefinition(identifier_token.value, rhs_expr)
                 else:
-                    return ConstraintNode(identifier_token.value, next_tok.value, rhs_expr)
-                                
-        # expr = self.parseExpression()
-        # Here you would add logic to distinguish statements from expressions,
-        # and construct appropriate AST nodes like VariableDefinition, Constraint, etc.
-        # return expr
+                    return ConstraintNode(identifier_token.value, op_tok.value, rhs_expr)
+        else:
+            left_expr = self.parseExpression()
+            next_tok = self.peek()
+            if next_tok and next_tok.type in self.DEF_AND_CON:
+                op_tok = self.advance()
+                rhs_expr = self.parseExpression()
+                if op_tok and op_tok.type == TokenType.EQUALS_SINGLE:
+                    raise SyntaxError("Can't assign to this")
+                else:
+                    return ConstraintNode(left_expr, op_tok.value, rhs_expr)
+            
 
     def parseExpression(self, precedence=0):
         # Placeholder for expression parsing logic
@@ -86,7 +124,7 @@ class Parser:
         
         while True:
             op_tok = self.peek()
-            if not op_tok or op_tok.type not in self.OPERATORS:
+            if not op_tok or op_tok.type not in self.BINARY_OPERATORS:
                 break
             op_precedence = self.OPERATOR_PRECEDENCE[op_tok.value]
             if op_precedence < precedence:
@@ -173,5 +211,11 @@ class Parser:
                 return AngleNode(args)
             else:
                 return QueryNode(tok.value, args)
+        elif tok.type == TokenType.ANGLE:
+            self.expect(TokenType.ANGLE)
+            p1_tok = ObjectReference(self.expect(TokenType.OBJECT).value)
+            vertex_tok = ObjectReference(self.expect(TokenType.OBJECT).value)
+            p2_tok = ObjectReference(self.expect(TokenType.OBJECT).value)
+            return AngleNode(p1_tok, vertex_tok, p2_tok)
         else:
             raise SyntaxError(f"Unexpected token {tok} in primary expression")

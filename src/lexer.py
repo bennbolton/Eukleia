@@ -28,7 +28,9 @@ class Lexer:
         '^': TokenType.CARAT,
         '*': TokenType.ASTERISK,
         '<': TokenType.ANGLE,
-        '+': TokenType.PLUS
+        '+': TokenType.PLUS,
+        '/': TokenType.SLASH,
+        '//': TokenType.PARALLEL
 
     }
     PUNCTUATION = {

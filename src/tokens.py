@@ -12,6 +12,7 @@ class TokenType(Enum):
     MINUS = auto()    # Minus Operator
     ASTERISK = auto() # Multiplication Operator
     SLASH = auto()   # Division Operator
+    PARALLEL = auto()
     EQUALS_SINGLE = auto()   # Assignment Operator
     EQUALS_DOUBLE = auto()
     COMMA = auto()    # Comma

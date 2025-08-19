@@ -18,13 +18,13 @@ class VariableReference(ASTNode):
     def __init__(self, name):
         self.name = name
     def __repr__(self):
-        return str(self.name)   
+        return f"{type(self).__name__}({self.name})" 
     
 class ObjectReference(ASTNode):
     def __init__(self, name):
         self.name = name
     def __repr__(self):
-        return str(self.name)
+        return f"{type(self).__name__}({self.name})"
 
 
 class ObjectNode(ASTNode):
