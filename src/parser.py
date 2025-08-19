@@ -50,10 +50,7 @@ class Parser:
             # Parse statements
             node = self.parseStatement()
             if node is not None:
-                if isinstance(node, list):
-                    astNodes.extend(node)
-                else:
-                    astNodes.append(node)
+                astNodes.append(node)
         return astNodes
 
     def parseStatement(self):
@@ -71,7 +68,9 @@ class Parser:
                     return ObjectDefinition(left_expr, rhs_expr)
             else:
                 return ConstraintNode(left_expr, op_tok.value, rhs_expr)
-            
+        # Non declarative statements
+        else:
+            raise SyntaxError("Not sure what you're going for")
             
 
     def parseExpression(self, precedence=0):
@@ -103,12 +102,6 @@ class Parser:
             self.advance()
             right = self.parseExpression(op_precedence + 1)
             left = BinaryOp(left, op_tok.value, right)
-          
-        # Placeholder for binary operator parsing (e.g., constraints, assignments)
-        # while next token is an operator:
-        #     op = self.expect operator
-        #     right = self.parsePrimary()
-        #     left = BinaryOp(left, op, right)
 
         return left
 
@@ -144,7 +137,7 @@ class Parser:
             else:
                 return VariableReference(tok.value)
         elif tok.type == TokenType.OBJECT:
-            self.advance()
+            self.expect(TokenType.OBJECT)
             # Could be ObjectReference or more complex structure like LineNode
             # AB line shorthand
             if (next_tok := self.peek()) and next_tok.type == TokenType.OBJECT:
@@ -153,33 +146,50 @@ class Parser:
             else:
                 return ObjectReference(tok.value)
         elif tok.type == TokenType.LPAREN:
-            self.advance()
-            # Parse point or grouped expression
-            # Placeholder: parse two numbers separated by comma
-            x_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
-            self.expect(TokenType.COMMA)
-            y_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
+            self.expect(TokenType.LPAREN)
+            
+            
+            
+            
+            expr = self.parseExpression()
             self.expect(TokenType.RPAREN)
-            x_val = x_tok.value if x_tok.type == TokenType.NUMBER else UnknownNode()
-            y_val = y_tok.value if y_tok.type == TokenType.NUMBER else UnknownNode()
-            return PointNode(x_val, y_val)
+            print(expr)
+            if isinstance(expr, CollectionNode):
+                if len(expr) == 2:
+                    return PointNode(expr.items[0], expr.items[1])
+            
+            
+            
+            
+            
+            # # Parse point or grouped expression
+            # # Placeholder: parse two numbers separated by comma
+            # x_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
+            # self.expect(TokenType.COMMA)
+            # y_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
+            # self.expect(TokenType.RPAREN)
+            # x_val = x_tok.value if x_tok.type == TokenType.NUMBER else UnknownNode()
+            # y_val = y_tok.value if y_tok.type == TokenType.NUMBER else UnknownNode()
+            # return PointNode(x_val, y_val)
+        
+        
+        
+        
+        
+        
         elif tok.type == TokenType.KEYWORD:
             self.advance()
             # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
-            # Placeholder logic: parse function call style
             self.expect(TokenType.LPAREN)
-            args = []
-            while (arg_tok := self.peek()) and arg_tok.type != TokenType.RPAREN:
-                if arg_tok.type == TokenType.COMMA:
-                    self.advance()
-                    continue
-                args.append(self.parseExpression())
+            args = self.parseExpression()
+            if isinstance(args, CollectionNode):
+                args = args.items
             self.expect(TokenType.RPAREN)
             # Example for CircleNode
             if tok.value == "Circle":
-                return CircleNode(args)
+                return CircleNode(*args)
             elif tok.value == "Angle":
-                return AngleNode(args)
+                return AngleNode(*args)
             else:
                 return QueryNode(tok.value, args)
         elif tok.type == TokenType.ANGLE:

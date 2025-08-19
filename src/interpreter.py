@@ -12,86 +12,65 @@ class Interpreter:
             
     
     def evaluate(self, node):
-        # Numbers
-        if isinstance(node, NumberNode):
+        # -- Primitives
+        if isinstance(node, (NumberNode, Point, Circle, Line)):
             return node
         
-        
-        
-        elif isinstance(node, ObjectDefinition):
-            obj = node.obj if (not isinstance(node.obj, ASTNode)) or isinstance(node.obj, (CollectionNode, )) else self.evaluate(node.obj)
-            value = node.value if not isinstance(node.obj, ASTNode) or isinstance(node.obj, (CollectionNode, )) else self.evaluate(node.value)
+        # -- Object/Variable Definitions
+        elif isinstance(node, (ObjectDefinition, VariableDefinition)):
+            ident = node.ident if (not isinstance(node.ident, ASTNode)) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.ident)
+            value = node.value if not isinstance(node.ident, ASTNode) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.value)
             # Handle Collections
-            if isinstance(obj, CollectionNode):
+            if isinstance(ident, CollectionNode):
                 # Both Collections
                 if isinstance(value, CollectionNode):
-                    if len(obj) == len(value):
-                        for i in range(len(obj)):
-                            self.evaluate(ObjectDefinition(obj.items[i], value.items[i]))
+                    if len(ident) == len(value):
+                        for i in range(len(ident)):
+                            self.evaluate(ObjectDefinition(ident.items[i], value.items[i]))
                     else:
-                        raise ValueError(f"Mismatched Collection Sizes: {len(obj)} and {len(value)}")
+                        raise ValueError(f"Mismatched Collection Sizes: {len(ident)} and {len(value)}")
                 # Collection = value
                 else:
-                    for i in range(len(obj)):
-                        self.evaluate(ObjectDefinition(obj.items[i], value))
+                    for i in range(len(ident)):
+                        self.evaluate(ObjectDefinition(ident.items[i], value))
             # Obj = Collection
             elif isinstance(value, CollectionNode):
-                self.symbols[obj] = Collection(value.items)
+                self.symbols[ident] = Collection(value.items)
             # Stanadrd A = B
             else:
-                self.symbols[obj] = value
+                self.symbols[ident] = value
         
-        elif isinstance(node, ObjectReference):
+        # -- Object/Variable Reference
+        elif isinstance(node, (ObjectReference, VariableReference)):
             value = self.symbols.get(node.name)
             if value is None:
                 return node.name
             return self.evaluate(value)
-        
-        
+            
+            
         elif isinstance(node, PointNode):
             return make_point(*node.args)
         
         elif isinstance(node, CollectionNode):
             pass
         
+        elif isinstance(node, CircleNode):
+            evaluated_args = []
+            for arg in node.args:
+                evaluated_args.append(self.evaluate(arg))
+            return make_circle(*evaluated_args)
         
+        
+        elif isinstance(node, QueryNode):
             
-        
-        
-        
-        
-        # elif isinstance(node, ObjectDefinition):
-        #     value = self.evaluate(node.value) if isinstance(node.value, ASTNode) else node.value
-        #     self.symbols[node.name] = value
-        #     # print(f"Defined object {node.name} = {node.value}")
-        
-        # elif isinstance(node, VariableDefinition):
-        #     if isinstance(node.value, NumberNode):
-        #         self.symbols[node.name] = node.value
-        #         # print(f"Defined variable {node.name} = {node.value}")
-        #     else:
-        #         value = self.evaluate(node.value)
-        #         if isinstance(value, Object):
-        #             raise NameError(f"Variables cannot be Objects")
-        #         self.symbols[node.name] = value
-            
-        
-        # elif isinstance(node, (ObjectReference, VariableReference)):
-        #     value = self.symbols.get(node.name)
-        #     if value is None:
-        #         raise NameError(f"name: '{node.name}' is not defined")
-        #     return self.evaluate(value)
-        
-        # elif isinstance(node, QueryNode):
-            
-        #     args = [self.evaluate(arg) if isinstance(arg, ASTNode) else arg for arg in node.args]
+            args = [self.evaluate(arg) if isinstance(arg, ASTNode) else arg for arg in node.args]
 
-        #     # print(f"Query: {node.function}({', '.join(map(str, args))})")
-        #     func = BUILTINS.get(node.function)
-        #     if func:
-        #         return func(*args)
-        #     else:
-        #         raise NameError(f"Unknown function '{node.function}'")
+            # print(f"Query: {node.function}({', '.join(map(str, args))})")
+            func = BUILTINS.get(node.function)
+            if func:
+                return func(*args)
+            else:
+                raise NameError(f"Unknown function '{node.function}'")
 
         elif isinstance(node, ConstraintNode):
             self.constraints.append(node)

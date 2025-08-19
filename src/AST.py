@@ -50,19 +50,19 @@ class AngleNode(ObjectNode):
     pass
         
 class ObjectDefinition(ASTNode):
-    def __init__(self, obj, value):
-        self.obj = obj
+    def __init__(self, ident, value):
+        self.ident = ident
         self.value = value
     def __repr__(self):
-        return f'{type(self).__name__}({self.obj}, {self.value})'
+        return f'{type(self).__name__}({self.ident}, {self.value})'
 
 
 class VariableDefinition(ASTNode):
-    def __init__(self, var, value):
-        self.name = var
+    def __init__(self, ident, value):
+        self.ident = ident
         self.value = value
     def __repr__(self):
-        return f'{type(self).__name__}({self.var}, {self.value})'
+        return f'{type(self).__name__}({self.ident}, {self.value})'
     
 
 class ConstraintNode(ASTNode):

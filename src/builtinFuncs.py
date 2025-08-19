@@ -10,9 +10,9 @@ def make_circle(*args):
         return Circle(center=Point(x, y), radius=r)
     
     # Circle(O, r)
-    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], (int, float, UnknownNode)):
+    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], NumberNode):
         center, r = args
-        return Circle(center=center, radius=r)
+        return Circle(center=center, radius=r.value)
     
     elif len(args) >= 3 and all(isinstance(a, Point) for a in args):
         return Circle(points=args)
