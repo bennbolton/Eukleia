@@ -50,19 +50,19 @@ class AngleNode(ObjectNode):
     pass
         
 class ObjectDefinition(ASTNode):
-    def __init__(self, name, value):
-        self.name = name
+    def __init__(self, obj, value):
+        self.obj = obj
         self.value = value
     def __repr__(self):
-        return f'{type(self).__name__}({self.name}, {self.value})'
+        return f'{type(self).__name__}({self.obj}, {self.value})'
 
 
 class VariableDefinition(ASTNode):
-    def __init__(self, name, value):
-        self.name = name
+    def __init__(self, var, value):
+        self.name = var
         self.value = value
     def __repr__(self):
-        return f'{type(self).__name__}({self.name}, {self.value})'
+        return f'{type(self).__name__}({self.var}, {self.value})'
     
 
 class ConstraintNode(ASTNode):
@@ -94,6 +94,9 @@ class BinaryOp(ASTNode):
 class CollectionNode(ASTNode):
     def __init__(self, items: list):
         self.items = items
+    
+    def __len__(self):
+        return len(self.items)
         
     def __repr__(self):
         return f"{type(self).__name__}({', '.join(map(str, self.items))})"

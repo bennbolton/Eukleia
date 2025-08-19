@@ -142,3 +142,7 @@ class Circle(Object):
         else:
             return f"Undefined Circle..."
 
+class Collection(Object):
+    def __init__(self, items):
+        self.items = items
+        

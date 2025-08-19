@@ -61,17 +61,6 @@ class Parser:
         left_expr = self.parseExpression()
         tok = self.peek()
         
-        # expression lists
-        if tok and tok.type == TokenType.COMMA:
-            exprs = [left_expr]
-            while tok and tok.type == TokenType.COMMA:
-                self.expect(TokenType.COMMA)
-                expr = self.parseExpression()
-                exprs.append(expr)
-                tok = self.peek()
-            left_expr = CollectionNode(exprs)
-            tok = self.peek()
-        # Definitions and Constraints
         if tok and tok.type in self.DEF_AND_CON:
             op_tok = self.advance()
             rhs_expr = self.parseExpression()
@@ -83,10 +72,6 @@ class Parser:
             else:
                 return ConstraintNode(left_expr, op_tok.value, rhs_expr)
             
-        elif tok and tok.type == TokenType.COMMA:
-            
-            while True:
-                nxt_tok = self.peek()
             
 
     def parseExpression(self, precedence=0):
@@ -95,6 +80,18 @@ class Parser:
         # BinaryOp, FunctionCall, AngleNode, LineNode, CircleNode, etc.
         # For now, simply parse a primary expression
         left = self.parsePrimary()
+        
+        
+        
+        # Check for a comma immediately after a primary expression
+        if (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+            exprs = [left]
+            while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
+                self.advance()  # consume comma
+                exprs.append(self.parsePrimary())  # parse each element as a primary
+            left = CollectionNode(exprs)  # wrap into a collection node
+        
+        
         
         while True:
             op_tok = self.peek()

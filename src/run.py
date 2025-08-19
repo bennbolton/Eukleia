@@ -25,7 +25,7 @@ def main():
     # --- Lexing ---
     lexer = Lexer(code)
     tokens = lexer.generate_tokens()
-    print(tokens)
+    # print(tokens)
     
     # --- Parsing ---
     parser = Parser(tokens)
@@ -36,11 +36,13 @@ def main():
         raise e
         
     print(ast_nodes)
-    # interpreter = Interpreter()
-    # interpreter.run(ast_nodes)
+    interpreter = Interpreter()
+    interpreter.run(ast_nodes)
     
-    # print("SYMBOLS:")
-    # print(interpreter.symbols)
+    print("SYMBOLS:")
+    print(interpreter.symbols)
+    print("CONSTRAINTS:")
+    print(interpreter.constraints)
 
 if __name__ == "__main__":
     main()   

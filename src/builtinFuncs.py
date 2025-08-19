@@ -1,15 +1,16 @@
 from geometry import *
 from AST import *
+import math
 
 
 def make_circle(*args):
     # Circle(x, y, r)
-    if len(args) == 3 and all(isinstance(a, Number) for a in args):
+    if len(args) == 3 and all(isinstance(a, NumberNode) for a in args):
         x, y, r = args
         return Circle(center=Point(x, y), radius=r)
     
     # Circle(O, r)
-    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], (int, float, Unknown)):
+    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], (int, float, UnknownNode)):
         center, r = args
         return Circle(center=center, radius=r)
     
@@ -22,7 +23,7 @@ def make_circle(*args):
 def make_point(*args):
     if len(args) == 1 and isinstance(args[0], tuple):
         return Point(args[0][0], args[0][1])
-    elif len(args) == 2 and all(isinstance(a, Number) for a in args):
+    elif len(args) == 2 and all(isinstance(a, NumberNode) for a in args):
         return Point(args[0], args[1])
     else:
         raise TypeError("Unknown argument arrangement for Point()")
@@ -51,16 +52,16 @@ def printout(*args):
         raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
 
 def rad2deg(*args):
-    if len(args) == 1 and isinstance(args[0], Number):
-        return Number(math.degrees(args[0].value))
+    if len(args) == 1 and isinstance(args[0], NumberNode):
+        return NumberNode(math.degrees(args[0].value))
     else:
-        raise TypeError(f"Deg only takes 1 positional argument of type Number, got {len(args)}")
+        raise TypeError(f"Deg only takes 1 positional argument of type NumberNode, got {len(args)}")
     
 def deg2rad(*args):
-    if len(args) == 1 and isinstance(args[0], Number):
-        return Number(math.radians(args[0].value))
+    if len(args) == 1 and isinstance(args[0], NumberNode):
+        return NumberNode(math.radians(args[0].value))
     else:
-        raise TypeError(f"Rad only takes 1 positional argument of type Number, got {len(args)}")
+        raise TypeError(f"Rad only takes 1 positional argument of type NumberNode, got {len(args)}")
     
 
 BUILTINS = {
