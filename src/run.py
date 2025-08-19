@@ -36,11 +36,11 @@ def main():
         raise e
         
     print(ast_nodes)
-    interpreter = Interpreter()
-    interpreter.run(ast_nodes)
+    # interpreter = Interpreter()
+    # interpreter.run(ast_nodes)
     
-    print("SYMBOLS:")
-    print(interpreter.symbols)
+    # print("SYMBOLS:")
+    # print(interpreter.symbols)
 
 if __name__ == "__main__":
     main()   

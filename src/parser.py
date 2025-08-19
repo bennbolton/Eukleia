@@ -58,61 +58,35 @@ class Parser:
 
     def parseStatement(self):
         # VariableDefinition, ObjectDefinition, Constraint, QueryStatement, ShorthandDefinition, etc.
+        left_expr = self.parseExpression()
         tok = self.peek()
         
-        if tok and tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT):
-            id_tokens = []
-            while True:
-                current_tok = self.peek()
-                if current_tok and current_tok.type in (TokenType.IDENTIFIER, TokenType.OBJECT):
-                    id_tokens.append(self.advance())
-                    
-                    next_tok = self.peek()
-                    if next_tok and next_tok.type == TokenType.COMMA:
-                        self.expect(TokenType.COMMA)
-                        continue
-                    elif next_tok and next_tok.type == TokenType.COLON:
-                        self.expect(TokenType.COLON)
-                        break
-                    else:
-                        break
+        # expression lists
+        if tok and tok.type == TokenType.COMMA:
+            exprs = [left_expr]
+            while tok and tok.type == TokenType.COMMA:
+                self.expect(TokenType.COMMA)
+                expr = self.parseExpression()
+                exprs.append(expr)
+                tok = self.peek()
+            left_expr = CollectionNode(exprs)
+            tok = self.peek()
+        # Definitions and Constraints
+        if tok and tok.type in self.DEF_AND_CON:
+            op_tok = self.advance()
+            rhs_expr = self.parseExpression()
+            if op_tok.type == TokenType.EQUALS_SINGLE:
+                if isinstance(left_expr, VariableReference):
+                    return VariableDefinition(left_expr, rhs_expr)
                 else:
-                    break
+                    return ObjectDefinition(left_expr, rhs_expr)
+            else:
+                return ConstraintNode(left_expr, op_tok.value, rhs_expr)
             
-            if id_tokens and self.peek(-1) and self.peek(-1).type == TokenType.COLON:
-                rhs_expr = self.parseExpression()
-                nodes = []
-                for id_tok in id_tokens:
-                    if id_tok.type == TokenType.IDENTIFIER:
-                        nodes.append(VariableDefinition(id_tok.value, rhs_expr))
-                    else:
-                        nodes.append(ObjectDefinition(id_tok.value, rhs_expr))
-                return nodes
-                
-                
-            next_tok = self.peek()
-            # Definitions and Constraints
-            if len(id_tokens) == 1 and next_tok and next_tok.type in self.DEF_AND_CON:
-                identifier_token = id_tokens[0]
-                op_tok = self.advance()
-                rhs_expr = self.parseExpression()
-                if op_tok.type == TokenType.EQUALS_SINGLE:
-                    if identifier_token.type == TokenType.IDENTIFIER:
-                        return VariableDefinition(identifier_token.value, rhs_expr)
-                    else:
-                        return ObjectDefinition(identifier_token.value, rhs_expr)
-                else:
-                    return ConstraintNode(identifier_token.value, op_tok.value, rhs_expr)
-        else:
-            left_expr = self.parseExpression()
-            next_tok = self.peek()
-            if next_tok and next_tok.type in self.DEF_AND_CON:
-                op_tok = self.advance()
-                rhs_expr = self.parseExpression()
-                if op_tok and op_tok.type == TokenType.EQUALS_SINGLE:
-                    raise SyntaxError("Can't assign to this")
-                else:
-                    return ConstraintNode(left_expr, op_tok.value, rhs_expr)
+        elif tok and tok.type == TokenType.COMMA:
+            
+            while True:
+                nxt_tok = self.peek()
             
 
     def parseExpression(self, precedence=0):
@@ -132,7 +106,7 @@ class Parser:
             self.advance()
             right = self.parseExpression(op_precedence + 1)
             left = BinaryOp(left, op_tok.value, right)
-            
+          
         # Placeholder for binary operator parsing (e.g., constraints, assignments)
         # while next token is an operator:
         #     op = self.expect operator

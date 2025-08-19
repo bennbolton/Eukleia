@@ -1,5 +1,6 @@
 class ASTNode:
-    pass
+    def __init__(self, *args):
+        self.args = args
 
 # Expressions
 class NumberNode(ASTNode):
@@ -28,7 +29,8 @@ class ObjectReference(ASTNode):
 
 
 class ObjectNode(ASTNode):
-    def __init__(self, *args):
+    def __init__(self, *args, name=None):
+        self.name = name
         self.args = args
         pass
     
@@ -88,3 +90,10 @@ class BinaryOp(ASTNode):
     
     def __repr__(self):
         return f"{type(self).__name__}({self.left}, {self.op}, {self.right})"
+    
+class CollectionNode(ASTNode):
+    def __init__(self, items: list):
+        self.items = items
+        
+    def __repr__(self):
+        return f"{type(self).__name__}({', '.join(map(str, self.items))})"
