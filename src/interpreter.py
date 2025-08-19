@@ -1,6 +1,13 @@
 from AST import *
 from builtinFuncs import *
 class Interpreter:
+    
+    BINARY_OPS = {
+        '+': lambda a,b: Number(a + b),
+        '-': lambda a,b: Number(a - b),
+        '*': lambda a,b: Number(a * b),
+        '/': lambda a,b: Number(a / b),
+    }
     def __init__(self):
         self.symbols = {}
         self.constraints = []
@@ -12,14 +19,21 @@ class Interpreter:
             
     
     def evaluate(self, node):
+        
         # -- Primitives
-        if isinstance(node, (NumberNode, Point, Circle, Line)):
+        if isinstance(node, (Number, Point, Circle, Line)):
             return node
+        
+        # -- Numbers
+        elif isinstance(node, NumberNode):
+            return type(node).func(node.value)
         
         # -- Object/Variable Definitions
         elif isinstance(node, (ObjectDefinition, VariableDefinition)):
-            ident = node.ident if (not isinstance(node.ident, ASTNode)) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.ident)
-            value = node.value if not isinstance(node.ident, ASTNode) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.value)
+            # ident = node.ident if (not isinstance(node.ident, ASTNode)) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.ident)
+            # value = node.value if not isinstance(node.ident, ASTNode) or isinstance(node.ident, (CollectionNode, )) else self.evaluate(node.value)
+            ident = self.evaluate(node.ident)
+            value = self.evaluate(node.value)
             # Handle Collections
             if isinstance(ident, CollectionNode):
                 # Both Collections
@@ -46,19 +60,28 @@ class Interpreter:
             if value is None:
                 return node.name
             return self.evaluate(value)
-            
-            
-        elif isinstance(node, PointNode):
-            return make_point(*node.args)
-        
-        elif isinstance(node, CollectionNode):
-            pass
-        
-        elif isinstance(node, CircleNode):
+           
+        # -- Keywords 
+        elif isinstance(node, (PointNode, CircleNode)):
             evaluated_args = []
             for arg in node.args:
                 evaluated_args.append(self.evaluate(arg))
-            return make_circle(*evaluated_args)
+            return type(node).func(*evaluated_args)
+        
+        elif isinstance(node, BinaryOp):
+            left = self.evaluate(node.left)
+            right = self.evaluate(node.right)
+            op = node.op
+            return self.BINARY_OPS[op](left, right)
+                
+        
+        # -- Collections
+        elif isinstance(node, CollectionNode):
+            pass
+        
+
+        
+        
         
         
         elif isinstance(node, QueryNode):

@@ -34,7 +34,7 @@ def main():
     except Exception as e:
         # printout(f'Parser error: {e
         raise e
-        
+    print("NODES:")
     print(ast_nodes)
     interpreter = Interpreter()
     interpreter.run(ast_nodes)

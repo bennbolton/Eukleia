@@ -2,15 +2,28 @@ from geometry import *
 from AST import *
 import math
 
+def make_number(*args):
+    # Number
+    if len(args) == 1 and isinstance(args[0], (int, float)):
+        return Number(args[0])
+    # Unknown or inf
+    elif len(args) == 1 and isinstance(args[0], str):
+        if args[0] == '?':
+            return make_unknown()
+        elif args[0] == 'inf':
+            return Number(args[0])
+
+def make_unknown(*args):
+    return Unknown()
 
 def make_circle(*args):
     # Circle(x, y, r)
-    if len(args) == 3 and all(isinstance(a, NumberNode) for a in args):
+    if len(args) == 3 and all(isinstance(a, Number) for a in args):
         x, y, r = args
         return Circle(center=Point(x, y), radius=r)
     
     # Circle(O, r)
-    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], NumberNode):
+    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], Number):
         center, r = args
         return Circle(center=center, radius=r.value)
     
@@ -23,7 +36,7 @@ def make_circle(*args):
 def make_point(*args):
     if len(args) == 1 and isinstance(args[0], tuple):
         return Point(args[0][0], args[0][1])
-    elif len(args) == 2 and all(isinstance(a, NumberNode) for a in args):
+    elif len(args) == 2 and all(isinstance(a, Number) for a in args):
         return Point(args[0], args[1])
     else:
         raise TypeError("Unknown argument arrangement for Point()")
@@ -52,14 +65,14 @@ def printout(*args):
         raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
 
 def rad2deg(*args):
-    if len(args) == 1 and isinstance(args[0], NumberNode):
-        return NumberNode(math.degrees(args[0].value))
+    if len(args) == 1 and isinstance(args[0], Number):
+        return Number(math.degrees(args[0].value))
     else:
         raise TypeError(f"Deg only takes 1 positional argument of type NumberNode, got {len(args)}")
     
 def deg2rad(*args):
-    if len(args) == 1 and isinstance(args[0], NumberNode):
-        return NumberNode(math.radians(args[0].value))
+    if len(args) == 1 and isinstance(args[0], Number):
+        return Number(math.radians(args[0].value))
     else:
         raise TypeError(f"Rad only takes 1 positional argument of type NumberNode, got {len(args)}")
     
@@ -72,5 +85,6 @@ BUILTINS = {
     "Print": printout,
     "Line": make_line,
     "Deg": rad2deg,
-    "Rad": deg2rad
+    "Rad": deg2rad,
+    "Number": make_number
 }

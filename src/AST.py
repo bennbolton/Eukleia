@@ -1,15 +1,18 @@
+from builtinFuncs import *
 class ASTNode:
     def __init__(self, *args):
         self.args = args
 
 # Expressions
 class NumberNode(ASTNode):
+    func = make_number
     def __init__(self, value):
         self.value = value
     def __repr__(self):
         return str(round(self.value, 2))
     
 class UnknownNode(NumberNode):
+    func = make_unknown
     def __init__(self):
         self.value = '?'
     def __repr__(self):
@@ -38,12 +41,14 @@ class ObjectNode(ASTNode):
         return f"{type(self).__name__}({', '.join(map(str, self.args))})"
     
 class PointNode(ObjectNode):
+    func = make_point
     pass
 
 class LineNode(ObjectNode):
     pass
 
 class CircleNode(ObjectNode):
+    func = make_circle
     pass
 
 class AngleNode(ObjectNode):

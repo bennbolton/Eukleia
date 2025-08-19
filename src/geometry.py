@@ -3,6 +3,26 @@ from helperFuncs import *
 class Object:
     pass
 
+class Number(Object):
+    def __init__(self, value):
+        self.value = value
+        
+    def __add__(self, other):
+        if isinstance(other, Number):
+            return self.value + other.value
+        else:
+            return self.value + other
+        
+    def __repr__(self):
+        return str(self.value)
+        
+class Unknown(Number):
+    def __init__(self):
+        self.value = '?'
+    
+    def __repr__(self):
+        return '?'
+
 class Point(Object):
     name = "Point"
     def __init__(self, x='?', y='y'):

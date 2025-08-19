@@ -87,7 +87,7 @@ class Parser:
             exprs = [left]
             while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
                 self.advance()  # consume comma
-                exprs.append(self.parsePrimary())  # parse each element as a primary
+                exprs.append(self.parseExpression())  # parse each element as a primary
             left = CollectionNode(exprs)  # wrap into a collection node
         
         
@@ -154,29 +154,12 @@ class Parser:
             expr = self.parseExpression()
             self.expect(TokenType.RPAREN)
             print(expr)
-            if isinstance(expr, CollectionNode):
-                if len(expr) == 2:
-                    return PointNode(expr.items[0], expr.items[1])
+            if isinstance(expr, CollectionNode) and len(expr) == 2:
+                return PointNode(expr.items[0], expr.items[1])
+            else:
+                return expr
             
-            
-            
-            
-            
-            # # Parse point or grouped expression
-            # # Placeholder: parse two numbers separated by comma
-            # x_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
-            # self.expect(TokenType.COMMA)
-            # y_tok = self.expect([TokenType.NUMBER, TokenType.UNKNOWN])
-            # self.expect(TokenType.RPAREN)
-            # x_val = x_tok.value if x_tok.type == TokenType.NUMBER else UnknownNode()
-            # y_val = y_tok.value if y_tok.type == TokenType.NUMBER else UnknownNode()
-            # return PointNode(x_val, y_val)
-        
-        
-        
-        
-        
-        
+       
         elif tok.type == TokenType.KEYWORD:
             self.advance()
             # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
