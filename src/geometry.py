@@ -13,6 +13,24 @@ class Number(Object):
         else:
             return self.value + other
         
+    def __sub__(self, other):
+        if isinstance(other, Number):
+            return self.value - other.value
+        else:
+            return self.value - other
+        
+    def __mul__(self, other):
+        if isinstance(other, Number):
+            return self.value * other.value
+        else:
+            return self.value * other
+        
+    def __div__(self, other):
+        if isinstance(other, Number):
+            return self.value / other.value
+        else:
+            return self.value / other
+        
     def __repr__(self):
         return str(self.value)
         

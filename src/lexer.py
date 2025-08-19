@@ -29,6 +29,7 @@ class Lexer:
         '*': TokenType.ASTERISK,
         '<': TokenType.ANGLE,
         '+': TokenType.PLUS,
+        '-': TokenType.MINUS,
         '/': TokenType.SLASH,
         '//': TokenType.PARALLEL
 
