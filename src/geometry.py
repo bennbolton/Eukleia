@@ -1,11 +1,15 @@
 from helperFuncs import *
 
-class Object:
+class EklPrim:
+    pass
+
+class Object(EklPrim):
     pass
 
 class Number(Object):
-    def __init__(self, value):
+    def __init__(self, value, ident=None):
         self.value = value
+        self.ident = ident
         
     def __add__(self, other):
         if isinstance(other, Number):
@@ -35,17 +39,19 @@ class Number(Object):
         return str(self.value)
         
 class Unknown(Number):
-    def __init__(self):
+    def __init__(self, ident=None):
         self.value = '?'
+        self.ident = ident
     
     def __repr__(self):
         return '?'
 
 class Point(Object):
     name = "Point"
-    def __init__(self, x='?', y='y'):
+    def __init__(self, x='?', y='?', ident=None):
         self.x = x
         self.y = y
+        self.ident = ident
         
         self.defined = self.isDefined()
         
@@ -58,9 +64,10 @@ class Point(Object):
 
 class Line(Object):
     name = "Line"
-    def __init__(self, *, points=None, grad=None):
+    def __init__(self, *, points=None, grad=None, ident=None):
         self.grad = grad
         self.points = points
+        self.ident = ident
         
         self.evaluate()
         self.defined = self.isDefined()
@@ -115,14 +122,16 @@ class Line(Object):
                     return abs(point.y - expected_y) < tol
         return False
     
-
-        
+    def __repr__(self):
+        return f"{''.join([p.ident for p in self.points])}"
+    
 
 class Angle(Object):
     name = "Angle"
-    def __init__(self, points=None, lines=None):
+    def __init__(self, points=None, lines=None, ident=None):
         self.points = points
         self.lines = lines
+        self.ident = ident
         
         self.defined = self.isDefined()
         self.value = self.calc()
@@ -142,15 +151,17 @@ class Angle(Object):
         
         elif self.points and len(self.points) == 3 and self.isDefined():
             return angle_from_three_points(self.points[0], self.points[1], self.points[2])
+        
+    def __repr__(self):
+        return f"<{''.join([p.ident for p in self.points])}"
 
         
-        
-
 class Circle(Object):
     name = "Circle"
-    def __init__(self, *, center=None, radius=None, points=None):
+    def __init__(self, *, center=None, radius=None, points=None, ident=None):
         self.center = center
         self.radius = radius
+        self.ident = ident
         
         self.points = points
         self.evaluate()
@@ -180,7 +191,19 @@ class Circle(Object):
         else:
             return f"Undefined Circle..."
 
-class Collection(Object):
+
+class Constraint(EklPrim):
+    def __init__(self, left, op, right):
+        self.left = left
+        self.op = op
+        self.right = right
+        
+    def __repr__(self):
+        return f"{self.left} {self.op} {self.right}"
+
+
+class Collection(EklPrim):
     def __init__(self, items):
         self.items = items
+        
         

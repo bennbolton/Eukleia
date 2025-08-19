@@ -58,15 +58,16 @@ class Interpreter:
         elif isinstance(node, (ObjectReference, VariableReference)):
             value = self.symbols.get(node.name)
             if value is None:
-                return node.name
+                self.symbols[node.name] = Point(ident = node.name)
+                return self.symbols[node.name]
             return self.evaluate(value)
            
         # -- Keywords 
-        elif isinstance(node, (PointNode, CircleNode)):
+        elif isinstance(node, (PointNode, CircleNode, LineNode, AngleNode)):
             evaluated_args = []
             for arg in node.args:
                 evaluated_args.append(self.evaluate(arg))
-            return type(node).func(*evaluated_args)
+            return type(node).func(*evaluated_args, ident=node.name)
         
         elif isinstance(node, BinaryOp):
             left = self.evaluate(node.left)
@@ -78,25 +79,14 @@ class Interpreter:
         # -- Collections
         elif isinstance(node, CollectionNode):
             pass
-        
-
-        
-        
-        
-        
-        elif isinstance(node, QueryNode):
-            
-            args = [self.evaluate(arg) if isinstance(arg, ASTNode) else arg for arg in node.args]
-
-            # print(f"Query: {node.function}({', '.join(map(str, args))})")
-            func = BUILTINS.get(node.function)
-            if func:
-                return func(*args)
-            else:
-                raise NameError(f"Unknown function '{node.function}'")
-
+    
+        # -- Constraints
         elif isinstance(node, ConstraintNode):
-            self.constraints.append(node)
+            left = self.evaluate(node.left)
+            right = self.evaluate(node.right)
+            self.constraints.append(Constraint(left, node.operator, right))
+        
+        
         else:
             raise ValueError(f"Unknown AST Node type: {type(node)}. Node: {node}")
             

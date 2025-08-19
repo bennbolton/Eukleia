@@ -147,10 +147,6 @@ class Parser:
                 return ObjectReference(tok.value)
         elif tok.type == TokenType.LPAREN:
             self.expect(TokenType.LPAREN)
-            
-            
-            
-            
             expr = self.parseExpression()
             self.expect(TokenType.RPAREN)
             print(expr)
@@ -159,7 +155,6 @@ class Parser:
             else:
                 return expr
             
-       
         elif tok.type == TokenType.KEYWORD:
             self.advance()
             # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
@@ -175,6 +170,7 @@ class Parser:
                 return AngleNode(*args)
             else:
                 return QueryNode(tok.value, args)
+            
         elif tok.type == TokenType.ANGLE:
             self.expect(TokenType.ANGLE)
             p1_tok = ObjectReference(self.expect(TokenType.OBJECT).value)

@@ -45,6 +45,7 @@ class PointNode(ObjectNode):
     pass
 
 class LineNode(ObjectNode):
+    func = make_line
     pass
 
 class CircleNode(ObjectNode):
@@ -52,6 +53,7 @@ class CircleNode(ObjectNode):
     pass
 
 class AngleNode(ObjectNode):
+    func = make_angle
     pass
         
 class ObjectDefinition(ASTNode):
