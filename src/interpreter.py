@@ -10,10 +10,9 @@ class Interpreter:
         '*': lambda a,b: Number(a * b),
         '/': lambda a,b: Number(a / b),
     }
-    def __init__(self, solver):
-        self.solver = solver
-        self.solution_set = SolutionSet()
-        pass
+    def __init__(self, context):
+        self.context = context
+        self.solver = self.context.solver
         
     
     def run(self, nodes):
@@ -54,14 +53,14 @@ class Interpreter:
                         self.evaluate(ObjectDefinition(ident.items[i+1], fresh_value))
             # Obj = Collection
             elif isinstance(value, CollectionNode):
-                self.solution_set.add_object(ident, Collection(value.items))
+                self.solver.add_object(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                self.solution_set.add_object(ident.name, value)
+                self.solver.add_object(ident.name, value)
         
         # -- Object/Variable Reference
         elif isinstance(node, (ObjectReference, VariableReference)):
-            return self.solution_set.reference(node)
+            return self.solver.reference(node)
         
         
            
@@ -88,14 +87,14 @@ class Interpreter:
             # print(node.left)
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
-            self.solution_set.add_constraint(left, node.operator, right)
+            self.solver.add_constraint(left, node.operator, right)
             
         elif isinstance(node, QueryNode):
             evaluated_args = []
             for arg in node.args:
                 evaluated_args.append(self.evaluate(arg))
-            self.solution_set.refine()
-            return BUILTINFUNCS[node.func](*evaluated_args)
+            self.solver.refine()
+            return BUILTINFUNCS[node.func](*evaluated_args, context=self.context)
         
         
         else:

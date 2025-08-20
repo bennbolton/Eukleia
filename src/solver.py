@@ -2,9 +2,9 @@ import sympy as sp
 from .geometry import *
 import copy
 COUNT = 0
-class SolutionSet:
-    def __init__(self, solvers=None):
-        self.solvers = solvers if solvers else [Solver()]
+class Solver:
+    def __init__(self, sets=None):
+        self.solution_sets = sets if sets else [SolutionSet()]
 
     def refine(self):
         """
@@ -17,10 +17,10 @@ class SolutionSet:
 
         After processing all solvers, replace `self.solvers` with the new list.
         """
-        new_solvers = []
+        new_sets = []
 
-        for solver in self.solvers:
-            sols = solver.solve()
+        for sol_set in self.solution_sets:
+            sols = sol_set.solve()
 
             # Normalise various SymPy return shapes
             if sols is None:
@@ -30,30 +30,30 @@ class SolutionSet:
 
             if not sols:
                 # Nothing to apply / underdetermined: keep this branch as-is
-                new_solvers.append(solver)
+                new_sets.append(sol_set)
                 continue
             # print(solver.symbols['C'])
             if len(sols) == 1:
                 # Apply directly to this branch
-                solver.apply_solution(sols[0])
-                new_solvers.append(solver)
+                sol_set.apply_solution(sols[0])
+                new_sets.append(sol_set)
             else:
                 # Branch for each solution
                 for sol in sols:
-                    branched = solver.clone()
+                    branched = sol_set.clone()
                     branched.apply_solution(sol)
-                    new_solvers.append(branched)
+                    new_sets.append(branched)
             # print(solver.symbols['C'])
-        self.solvers = new_solvers
+        self.solution_sets = new_sets
         return self
     
     def add_object(self, name, obj):
-        for solver in self.solvers:
-            solver.add_object(name, obj)
+        for sol_set in self.solution_sets:
+            sol_set.add_object(name, obj)
     
     def add_constraint(self, left, op, right):
-        for solver in self.solvers:
-            solver.add_constraint(left, op, right)
+        for sol_set in self.solution_sets:
+            sol_set.add_constraint(left, op, right)
         self.refine()
 
     def reference(self, referenceNode):
@@ -65,8 +65,8 @@ class SolutionSet:
         
     def get_symbol_possibilities(self, referenceNode):
         values = []
-        for solver in self.solvers:
-            obj = solver.symbols.get(referenceNode.name)
+        for sol_set in self.solution_sets:
+            obj = sol_set.symbols.get(referenceNode.name)
             if obj is not None:
                 values.append(obj)
         # Remove duplicates (using repr for equality)
@@ -82,7 +82,7 @@ class SolutionSet:
 
 
 
-class Solver:
+class SolutionSet:
     def __init__(self):
         self.symbols = {}
         self.constraints = []
@@ -91,7 +91,6 @@ class Solver:
         self.symbols[name] = obj
         
     def add_constraint(self, left, op, right):
-        
         if op == '==':
             compareValue = {
                 Angle: 'as_sympy',
@@ -99,20 +98,12 @@ class Solver:
                 Number: 'as_sympy'
             }
             self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
-            # # Angle size constraint: <ABC == 90
-            # if isinstance(left, Angle):
-            #     self.constraints.append(sp.Eq(left.as_sympy(), right.as_sympy()))
-            # # Line length constraint: AB == CD
-            # elif isinstance(left, Line):
-            #     if isinstance(right, Line):
-            #         self.constraints.append(sp.Eq(left.length_squared(), right.length_squared()))
-            #     elif
         
     def clone(self):
-        new_solver = Solver()
-        new_solver.symbols = {name: copy.deepcopy(obj) for name, obj in self.symbols.items()}
-        new_solver.constraints = copy.deepcopy(self.constraints)
-        return new_solver
+        new_sol_set = SolutionSet()
+        new_sol_set.symbols = {name: copy.deepcopy(obj) for name, obj in self.symbols.items()}
+        new_sol_set.constraints = copy.deepcopy(self.constraints)
+        return new_sol_set
     
     def solve(self):
         if not self.constraints:
@@ -124,9 +115,6 @@ class Solver:
         for obj in self.symbols.values():
             obj.substitute(solution)
                     
-
-         
-    
     def all_symbols(self):
         syms = set()
         for obj in self.symbols.values():

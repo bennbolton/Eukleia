@@ -11,8 +11,7 @@ class Parser:
     }
     BINARY_OPERATORS = {TokenType.PLUS, TokenType.MINUS, TokenType.SLASH, TokenType.ASTERISK}
     DEF_AND_CON = {TokenType.PARALLEL, TokenType.EQUALS_DOUBLE, TokenType.EQUALS_SINGLE}
-    def __init__(self, tokens):
-        self.tokens = tokens
+    def __init__(self):
         self.pos = 0
 
     def peek(self, offset=0):
@@ -34,7 +33,8 @@ class Parser:
             raise SyntaxError(f'Expected token {tType} with value {value}, got {token}')
         return token
 
-    def parseTokens(self):
+    def parseTokens(self, tokens):
+        self.tokens = tokens
         astNodes = []
         while (tok := self.peek()) and tok.type != TokenType.EOF:
             # Skip comments

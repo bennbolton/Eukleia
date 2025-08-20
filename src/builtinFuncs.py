@@ -54,16 +54,16 @@ def get_type(*args):
         raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
     
 
-def printout(*args, solver=None):
+def printout(*args, context=None):
     from .astNodes import ObjectReference, VariableReference
     string = ""
     for arg in args:
         if isinstance(arg, (ObjectReference, VariableReference)):
-            possible_values = solver.get_symbol_possibilities()
+            possible_values = context.solver.get_symbol_possibilities(arg)
             if len(possible_values) == 1:
                 string += str(possible_values[0])
             else:
-                string += f"{{{', '.join(map(str(possible_values)))}}}"
+                string += f"{{{', '.join(map(str, possible_values))}}}"
     blue = '\033[94m'
     end = '\033[0m'
     print(f"{blue}{string}{end}")

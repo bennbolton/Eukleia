@@ -38,8 +38,7 @@ class Lexer:
         '.': TokenType.DOT,
         '...': TokenType.ELLIPSIS        
     }
-    def __init__(self, text):
-        self.text = text
+    def __init__(self):
         self.pos = 0
         
     def next_char(self):
@@ -54,7 +53,8 @@ class Lexer:
             return None
         return self.text[self.pos]
 
-    def generate_tokens(self):
+    def generate_tokens(self, text):
+        self.text = text
         tokens = []
         
         while (ch := self.next_char()) is not None:
