@@ -2,3 +2,5 @@ test.ekl
 test2.ekl
 test.py
 src/__pycache__
+.hypothesis
+.venv

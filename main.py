@@ -9,7 +9,7 @@ from src.builtinFuncs import printout
 def main():
 
     if len(sys.argv) < 2:
-        print("Usage: python run.py filename.ekl")
+        print("Usage: python main.py filename.ekl")
         sys.exit(1)
         
     filename = sys.argv[1]
@@ -22,9 +22,6 @@ def main():
     except FileNotFoundError:
         printout(f'File not found: {filename}')
         sys.exit(1)
-        
-    
-
         
     # --- Lexing ---
     lexer = Lexer(code)
