@@ -17,8 +17,8 @@ class Lexer:
         'Type',
         'Deg',
         'Rad'
-    }
-    OPERATORS = {
+    }    
+    SYMBOLS = {
         '?': TokenType.UNKNOWN,
         '@': TokenType.AT,
         '=': TokenType.EQUALS_SINGLE,
@@ -29,17 +29,14 @@ class Lexer:
         '+': TokenType.PLUS,
         '-': TokenType.MINUS,
         '/': TokenType.SLASH,
-        '//': TokenType.PARALLEL
-
-    }
-    PUNCTUATION = {
+        '//': TokenType.PARALLEL,
         '(': TokenType.LPAREN,
         ')': TokenType.RPAREN,
         ',': TokenType.COMMA,
         '#': TokenType.HASH,
         ':': TokenType.COLON,
         '.': TokenType.DOT,
-        '...': TokenType.ELLIPSIS    
+        '...': TokenType.ELLIPSIS        
     }
     def __init__(self, text):
         self.text = text
@@ -89,18 +86,18 @@ class Lexer:
                 while ((nxt := self.peek()) and (nxt.isdigit() or nxt == '.')):
                     num += self.next_char()
                 tokens.append(Token(TokenType.NUMBER, float(num)))
-            # operators
-            elif ch in self.OPERATORS:
+            # Symbols
+            elif ch in self.SYMBOLS:
                 occ = 1
-                while ((nxt := self.peek()) and nxt in self.OPERATORS and self.OPERATORS[ch] == self.OPERATORS[nxt]):
+                while ((nxt := self.peek()) and nxt in self.SYMBOLS and self.SYMBOLS[ch] == self.SYMBOLS[nxt]):
                     occ += 1
                     self.next_char()
-                try:
-                    tokens.append(Token(self.OPERATORS[ch*occ], ch*occ))
-                except:
-                    raise SyntaxError("Too Many operators")
-            elif ch in self.PUNCTUATION:
-                tokens.append(Token(self.PUNCTUATION[ch], 1))
+                symType = self.SYMBOLS.get(ch*occ)
+                if symType is not None:
+                    tokens.append(Token(symType, ch*occ))
+                else:
+                    symType = self.SYMBOLS.get(ch)
+                    tokens.extend([Token(symType, ch)]*occ)
             else:
                 raise Exception(f'Unexpected character: {ch}')
         

@@ -77,12 +77,11 @@ class ConstraintNode(ASTNode):
         
 
 class QueryNode(ASTNode):
-    def __init__(self, name, function, args):
-        self.name = name        # variable to store result
-        self.function = function
+    def __init__(self, function, args):
+        self.func = function
         self.args = args        # arguments to the function
     def __repr__(self):
-        return f'{self.function}({', '.join(map(str, self.args))})'
+        return f'{self.func}({', '.join(map(str, self.args))})'
         
 class BinaryOp(ASTNode):
     def __init__(self, left, op, right):

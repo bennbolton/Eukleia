@@ -1,5 +1,5 @@
 from .helperFuncs import *
-from sympy import Symbol
+import sympy as sp
 from uuid import uuid4
 
 class EklPrim:
@@ -12,10 +12,16 @@ class Number(Object):
     unknownCount = 0
     def __init__(self, value):
         if value is None:
-            self.value = Symbol('?' + str(self.unknownCount))
+            self.value = sp.Symbol('?' + str(self.unknownCount))
             Number.unknownCount += 1
         else:
-            self.value = value
+            self.value = value if isinstance(value, sp.Expr) else sp.Rational(value)
+    
+    def as_sympy(self):
+        if isinstance(self.value, sp.Expr):
+            return self.value
+        else:
+            raise TypeError("Idk man")
         
     def __add__(self, other):
         if isinstance(other, Number):
@@ -41,12 +47,18 @@ class Number(Object):
         else:
             return self.value / other
         
+    def symbols(self):
+        return self.value.free_symbols
+        
     def __repr__(self):
-        return str(self.value)
+        val = self.value
+        if isinstance(val, sp.Rational):
+            return str(float(val))
+        else:
+            return str(val)
 
 class Point(Object):
-    name = "Point"
-    def __init__(self, x='?', y='?'):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
         
@@ -55,12 +67,17 @@ class Point(Object):
     def isDefined(self):   
         return all(isinstance(a, (float, int)) for a in [self.x, self.y])
     
+    def as_tuple(self):
+        return (self.x, self.y)
+    
+    def symbols(self):
+        return self.x.symbols() | self.y.symbols()
+    
     def __repr__(self):
         return f"({self.x}, {self.y})"
     
 
 class Line(Object):
-    name = "Line"
     def __init__(self, *, points=None, grad=None):
         self.grad = grad
         self.points = points
@@ -88,6 +105,12 @@ class Line(Object):
                     self.grad = float('inf')
             else:
                 pass #grad and point check later
+            
+    def symbols(self):
+        syms = set()
+        for point in self.points:
+            syms |= point.symbols()
+        return list(syms)
     
     def pointOnLine(self, point):
         """
@@ -123,13 +146,11 @@ class Line(Object):
     
 
 class Angle(Object):
-    name = "Angle"
     def __init__(self, points=None, lines=None):
         self.points = points
         self.lines = lines
         
         self.defined = self.isDefined()
-        self.value = self.calc()
         
         
     def isDefined(self):
@@ -140,19 +161,25 @@ class Angle(Object):
         else:
             return False
         
-    def calc(self):
-        if not self.isDefined():
-            return self
-        
-        elif self.points and len(self.points) == 3 and self.isDefined():
-            return angle_from_three_points(self.points[0], self.points[1], self.points[2])
+    def as_sympy(self):
+        if len(self.points) == 3:
+            BAx = self.points[0].x.value - self.points[1].x.value
+            BAy = self.points[0].y.value - self.points[1].y.value
+            BCx = self.points[2].x.value - self.points[1].x.value
+            BCy = self.points[2].y.value - self.points[1].y.value
+            
+            dot = BAx*BCx + BAy*BCy
+            norm = sp.sqrt(BAx**2 + BAy**2) * sp.sqrt(BCx**2 + BCy**2)
+            return sp.acos(dot / norm)
+            
+        else:
+            raise ValueError("Bad Angle definition")
         
     # def __repr__(self):
     #     pass
 
         
 class Circle(Object):
-    name = "Circle"
     def __init__(self, *, center=None, radius=None, points=None):
         self.center = center
         self.radius = radius

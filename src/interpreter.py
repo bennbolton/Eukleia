@@ -56,14 +56,14 @@ class Interpreter:
                 self.solver.add_object(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                self.solver.add_object(ident, value)
+                self.solver.add_object(ident.name, value)
         
         # -- Object/Variable Reference
         elif isinstance(node, (ObjectReference, VariableReference)):
-            value = self.solver.objects.get(node.name)
+            value = self.solver.symbols.get(node.name)
             if value is None:
-                return node.name
-            return self.evaluate(value)
+                return node
+            return value
            
         # -- Keywords 
         elif isinstance(node, (PointNode, CircleNode, LineNode, AngleNode)):
@@ -87,7 +87,13 @@ class Interpreter:
         elif isinstance(node, ConstraintNode):
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
-            self.solver.constraints.append(Constraint(left, node.operator, right))
+            self.solver.add_constraint(left, node.operator, right)
+            
+        elif isinstance(node, QueryNode):
+            evaluated_args = []
+            for arg in node.args:
+                evaluated_args.append(self.evaluate(arg))
+            return BUILTINFUNCS[node.func](*evaluated_args)
         
         
         else:

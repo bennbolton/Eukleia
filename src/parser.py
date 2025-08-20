@@ -67,10 +67,17 @@ class Parser:
                     self.expect(TokenType.COMMA)
                     items.append(self.parseExpression(0))
             left_expr = CollectionNode(items)
+        
+        elif tok and tok.type == TokenType.ELLIPSIS:
+            self.expect(TokenType.ELLIPSIS)
+            end = self.parseExpression()
+            left_expr = self.handleEllipsis(left_expr, end)
+            print(self.peek())
             
+        
+        
+        
         tok = self.peek()
-        
-        
         if tok and tok.type in self.DEF_AND_CON:
             op_tok = self.advance()
             rhs_expr = self.parseExpression()
@@ -82,16 +89,14 @@ class Parser:
             else:
                 return ConstraintNode(left_expr, op_tok.value, rhs_expr)
         # Non declarative statements
+        elif tok and tok.type in (TokenType.NEWLINE, TokenType.EOF):
+            return left_expr
         else:
             raise SyntaxError("Not sure what you're going for")
             
 
     def parseExpression(self, precedence=0):
         left = self.parsePrimary()
-        
-
-        
-        
         
         while True:
             op_tok = self.peek()
@@ -113,7 +118,6 @@ class Parser:
         tok = self.peek()
         if tok is None:
             raise SyntaxError("Unexpected end of input")
-
         if tok.type == TokenType.NUMBER:
             self.advance()
             return NumberNode(tok.value)
@@ -168,12 +172,11 @@ class Parser:
             # Parse keyword-based nodes like CircleNode, AngleNode, QueryStatement
             self.expect(TokenType.LPAREN)
             args = []  
-            if next_tok := self.peek() and next_tok.type != TokenType.RPAREN:
+            if (next_tok := self.peek()) and next_tok.type != TokenType.RPAREN:
                 args.append(self.parseExpression(0))
                 while (next_tok := self.peek()) and next_tok.type == TokenType.COMMA:
                     self.expect(TokenType.COMMA)
                     args.append(self.parseExpression(0))
-                self.expect(TokenType.RPAREN)
                 
             self.expect(TokenType.RPAREN)
             # Example for CircleNode
@@ -192,3 +195,11 @@ class Parser:
             return AngleNode(p1_tok, vertex_tok, p2_tok)
         else:
             raise SyntaxError(f"Unexpected token {tok} in primary expression")
+        
+    def handleEllipsis(self, first, second):
+        if first.name.islower() != second.name.islower():
+            raise SyntaxError("Incompatible typings: {first} and {second}")
+        if ord(second.name) <= ord(first.name):
+            raise SyntaxError("Second argument is less than first")
+        
+        return CollectionNode([ObjectReference(chr(i)) for i in range(ord(first.name), ord(second.name)+1)])

@@ -30,7 +30,7 @@ def make_circle(*args):
     else:
         raise TypeError("Unknown argument arrangement for Circle()")
 
-def make_point(*args, ident=None):
+def make_point(*args):
     if len(args) == 1 and isinstance(args[0], tuple):
         return Point(args[0][0], args[0][1])
     elif len(args) == 2 and all(isinstance(a, Number) for a in args):
@@ -43,9 +43,10 @@ def make_line(*args):
         return Line(points=args)
     
 def make_angle(*args):
-    print([type(a) for a in args])
     if len(args) == 3 and all(isinstance(a, Point) for a in args):
-        return Angle(points=args).value
+        return Angle(points=args)
+    # elif len(args) == 3 and all(isinstance(a, str) for a in args):
+    #     return Angle(points=)
 
 def get_type(*args):
     if len(args) == 1:
@@ -64,18 +65,18 @@ def printout(*args):
 
 def rad2deg(*args):
     if len(args) == 1 and isinstance(args[0], Number):
-        return Number(math.degrees(args[0].value))
+        return Number(sp.deg(args[0].value))
     else:
-        raise TypeError(f"Deg only takes 1 positional argument of type NumberNode, got {len(args)}")
+        raise TypeError(f"Deg only takes 1 positional argument of type Number, got {len(args)} of type{'' if len(args) == 1 else 's'}: {', '.join([str(type(arg).__name__) for arg in args])}")
     
 def deg2rad(*args):
     if len(args) == 1 and isinstance(args[0], Number):
-        return Number(math.radians(args[0].value))
+        return Number(sp.rad(args[0].value))
     else:
         raise TypeError(f"Rad only takes 1 positional argument of type NumberNode, got {len(args)}")
     
 
-BUILTINS = {
+BUILTINFUNCS = {
     "Circle": make_circle,
     "Angle": make_angle,
     "Point": make_point,
