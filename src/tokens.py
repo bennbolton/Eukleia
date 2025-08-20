@@ -19,7 +19,7 @@ class TokenType(Enum):
     EQUALS_DOUBLE = auto()
     COMMA = auto()    # Comma
     ANGLE = auto()
-    UNKNOWN = auto()
+    QUESTION = auto()
     CARAT = auto()
     AT = auto()
     NEWLINE = auto()

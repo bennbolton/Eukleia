@@ -49,6 +49,10 @@ class Number(Object):
         
     def symbols(self):
         return self.value.free_symbols
+    
+    def substitute(self, solution):
+        self.value = sp.simplify(self.value.subs(solution))
+            
         
     def __repr__(self):
         val = self.value
@@ -73,6 +77,11 @@ class Point(Object):
     def symbols(self):
         return self.x.symbols() | self.y.symbols()
     
+    def substitute(self, solution):
+        self.x.substitute(solution)
+        self.y.substitute(solution)
+    
+    
     def __repr__(self):
         return f"({self.x}, {self.y})"
     
@@ -81,6 +90,13 @@ class Line(Object):
     def __init__(self, *, points=None, grad=None):
         self.grad = grad
         self.points = points
+        if len(self.points) == 2:
+            self.A = self.points[0]
+            self.B = self.points[1]
+        else:
+            # Can be changed later if needs be
+            self.A = None
+            self.B = None
         
         self.evaluate()
         self.defined = self.isDefined()
@@ -92,6 +108,10 @@ class Line(Object):
             return True
         else:
             return False
+        
+    def substitute(self, solution):
+        for point in self.points:
+            point.substitute(solution)
         
     def evaluate(self):
         if self.points:
@@ -105,7 +125,35 @@ class Line(Object):
                     self.grad = float('inf')
             else:
                 pass #grad and point check later
-            
+
+    def as_implicit(self):
+        """Return the implicit line equation: ax + by + c = 0"""
+        x, y = sp.symbols("x y")
+        x1, y1 = self.A.x.as_sympy(), self.A.y.as_sympy()
+        x2, y2 = self.B.x.as_sympy(), self.B.y.as_sympy()
+        return (y2 - y1) * (x - x1) - (x2 - x1) * (y - y1)
+    
+    def as_parametric(self):
+        """Return parametric form (x(t), y(t))"""
+        t = sp.symbols("t")
+        x1, y1 = self.A.x.as_sympy(), self.A.y.as_sympy()
+        x2, y2 = self.B.x.as_sympy(), self.B.y.as_sympy()
+        return (x1 + t*(x2 - x1), y1 + t*(y2 - y1))
+
+    def direction(self):
+        """Return direction vector (dx, dy)"""
+        x1, y1 = self.A.x.as_sympy(), self.A.y.as_sympy()
+        x2, y2 = self.B.x.as_sympy(), self.B.y.as_sympy()
+        return (x2 - x1, y2 - y1)
+    
+    def length_squared(self):
+        # This is a bad method, needs updating to be safer
+        if len(self.points) == 2:
+            return (self.B.x.value - self.A.x.value)**2 + (self.B.y.value - self.A.y.value)**2
+        
+    def length(self):
+       return self.length_squared()**0.5
+
     def symbols(self):
         syms = set()
         for point in self.points:
@@ -175,6 +223,10 @@ class Angle(Object):
         else:
             raise ValueError("Bad Angle definition")
         
+    def substitute(self, solution):
+        for point in self.points:
+            point.substitute(solution)
+        
     # def __repr__(self):
     #     pass
 
@@ -227,4 +279,15 @@ class Collection(EklPrim):
     def __init__(self, items):
         self.items = items
         
-        
+
+# ------
+# class BranchReference:
+#     def __init__(self, name, solution_set):
+#         self.name = name
+#         self.solution_set = solution_set
+
+#     def get_values(self):
+#         return [solver.symbols.get(self.name) for solver in self.solution_set.solvers]
+    
+    # def __repr__(self):
+    #     return f"({(str(self.get_values()))})"

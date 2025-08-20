@@ -26,7 +26,7 @@ def main():
     # --- Lexing ---
     lexer = Lexer(code)
     tokens = lexer.generate_tokens()
-    print(tokens)
+    # print(tokens)
     
     # --- Parsing ---
     parser = Parser(tokens)
@@ -35,21 +35,20 @@ def main():
     except Exception as e:
         # printout(f'Parser error: {e
         raise e
-    print("NODES:")
-    print(ast_nodes)
+    # print("NODES:")
+    # print(ast_nodes)
     
     # --- Interpreting ---
-    solver = Solver()
-    interpreter = Interpreter(solver)
+    interpreter = Interpreter()
     interpreter.run(ast_nodes)
     
     # --- Solving ---
-    print("SYMBOLS:")
-    print(solver.symbols)
-    print("CONSTRAINTS:")
-    print(solver.constraints)
-    solutions = solver.solve()
-    print(solutions)
+    # print("SYMBOLS:")
+    # print(solver.symbols)
+    # print("CONSTRAINTS:")
+    # print(solver.constraints)
+    # solutions = solver.solve()
+    # print(solutions)
     
 
 if __name__ == "__main__":

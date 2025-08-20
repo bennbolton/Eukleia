@@ -1,6 +1,5 @@
 from .geometry import *
-from .astNodes import *
-import math
+
 
 def make_number(*args):
     # Number
@@ -55,13 +54,20 @@ def get_type(*args):
         raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
     
 
-def printout(*args):
-    if len(args) == 1:
-        blue = '\033[94m'
-        end = '\033[0m'
-        print(f"{blue}{args[0]}{end}")
-    else:
-        raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
+def printout(*args, solver=None):
+    from .astNodes import ObjectReference, VariableReference
+    string = ""
+    for arg in args:
+        if isinstance(arg, (ObjectReference, VariableReference)):
+            possible_values = solver.get_symbol_possibilities()
+            if len(possible_values) == 1:
+                string += str(possible_values[0])
+            else:
+                string += f"{{{', '.join(map(str(possible_values)))}}}"
+    blue = '\033[94m'
+    end = '\033[0m'
+    print(f"{blue}{string}{end}")
+
 
 def rad2deg(*args):
     if len(args) == 1 and isinstance(args[0], Number):

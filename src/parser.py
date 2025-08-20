@@ -72,11 +72,8 @@ class Parser:
             self.expect(TokenType.ELLIPSIS)
             end = self.parseExpression()
             left_expr = self.handleEllipsis(left_expr, end)
-            print(self.peek())
             
-        
-        
-        
+
         tok = self.peek()
         if tok and tok.type in self.DEF_AND_CON:
             op_tok = self.advance()
@@ -121,9 +118,13 @@ class Parser:
         if tok.type == TokenType.NUMBER:
             self.advance()
             return NumberNode(tok.value)
-        elif tok.type == TokenType.UNKNOWN:
-            self.advance()
-            return NumberNode(None)
+        elif tok.type == TokenType.QUESTION:
+            self.expect(TokenType.QUESTION)
+            if (next_tok := self.peek()) and next_tok.type in (TokenType.OBJECT, TokenType.IDENTIFIER):
+                expr = self.parseExpression()
+                return QueryNode('Print', [expr])
+            else:
+                return NumberNode(None)
         elif tok.type == TokenType.IDENTIFIER:
             self.advance()
             # Could be VariableReference or FunctionCall

@@ -1,7 +1,7 @@
 from .astNodes import *
 from .builtinFuncs import *
-from .solver import Solver
-
+from .solver import Solver, SolutionSet
+    
 class Interpreter:
     
     BINARY_OPS = {
@@ -12,6 +12,7 @@ class Interpreter:
     }
     def __init__(self, solver):
         self.solver = solver
+        self.solution_set = SolutionSet()
         pass
         
     
@@ -53,17 +54,16 @@ class Interpreter:
                         self.evaluate(ObjectDefinition(ident.items[i+1], fresh_value))
             # Obj = Collection
             elif isinstance(value, CollectionNode):
-                self.solver.add_object(ident, Collection(value.items))
+                self.solution_set.add_object(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                self.solver.add_object(ident.name, value)
+                self.solution_set.add_object(ident.name, value)
         
         # -- Object/Variable Reference
         elif isinstance(node, (ObjectReference, VariableReference)):
-            value = self.solver.symbols.get(node.name)
-            if value is None:
-                return node
-            return value
+            return self.solution_set.reference(node)
+        
+        
            
         # -- Keywords 
         elif isinstance(node, (PointNode, CircleNode, LineNode, AngleNode)):
@@ -85,14 +85,16 @@ class Interpreter:
     
         # -- Constraints
         elif isinstance(node, ConstraintNode):
+            # print(node.left)
             left = self.evaluate(node.left)
             right = self.evaluate(node.right)
-            self.solver.add_constraint(left, node.operator, right)
+            self.solution_set.add_constraint(left, node.operator, right)
             
         elif isinstance(node, QueryNode):
             evaluated_args = []
             for arg in node.args:
                 evaluated_args.append(self.evaluate(arg))
+            self.solution_set.refine()
             return BUILTINFUNCS[node.func](*evaluated_args)
         
         

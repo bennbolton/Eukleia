@@ -19,7 +19,7 @@ class Lexer:
         'Rad'
     }    
     SYMBOLS = {
-        '?': TokenType.UNKNOWN,
+        '?': TokenType.QUESTION,
         '@': TokenType.AT,
         '=': TokenType.EQUALS_SINGLE,
         '==': TokenType.EQUALS_DOUBLE,
