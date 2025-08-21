@@ -4,77 +4,16 @@ import copy
 class Solver:
     def __init__(self, branches=None):
         self.branches = branches if branches else [SolverBranch()]
-
-    def refine(self):
-        """
-        Eagerly solve/branch *in place*.
-
-        For each solver in the current set:
-        - If there are no solutions (or nothing new), keep it as-is.
-        - If there is exactly one solution, apply it in-place.
-        - If there are multiple, clone and apply each, producing branches.
-
-        After processing all solvers, replace `self.solvers` with the new list.
-        """
-        new_branches = []
-        for branch in self.branches:
-            sols = branch.solve()
-
-            # Normalise various SymPy return shapes
-            if sols is None:
-                sols = []
-            elif isinstance(sols, dict):
-                sols = [sols]
-
-            if not sols:
-                # Nothing to apply / underdetermined: keep this branch as-is
-                new_branches.append(branch)
-                continue
-            if len(sols) == 1:
-                # Apply directly to this branch
-                branch.apply_solution(sols[0])
-                new_branches.append(branch)
-            else:
-                # Branch for each solution
-                for sol in sols:
-                    branched = branch.clone()
-                    branched.apply_solution(sol)
-                    new_branches.append(branched)
-        self.branches = new_branches
-        return self
     
-    def add_object(self, name, obj):
-        for branch in self.branches:
-            branch.add_object(name, obj)
+    def add_branches(self, new_branches):
+        for branch in new_branches:
+            if not any([branch == existing for existing in self.branches]):
+                self.branches.append(branch)
+
+    def prune(self):
+        self.branches = list(filter(lambda x: x.is_valid(), self.branches))
+
     
-    def add_constraint(self, left, op, right):
-        for branch in self.branches:
-            branch.add_constraint(left, op, right)
-        self.refine()
-
-
-    def reference(self, referenceNode):
-        unique_values = self.get_symbol_possibilities(referenceNode)
-        if len(unique_values) == 1:
-            return unique_values[0]
-        else:
-            return referenceNode
-        
-    def get_symbol_possibilities(self, referenceNode):
-        values = []
-        for branch in self.branches:
-            obj = branch.symbols.get(referenceNode.name)
-            if obj is not None:
-                values.append(obj)
-        # Remove duplicates (using repr for equality)
-        unique_values = []
-        seen = set()
-        for val in values:
-            rep = repr(val)
-            if rep not in seen:
-                unique_values.append(val)
-                seen.add(rep)
-        return unique_values
 
 
 
@@ -83,6 +22,8 @@ class SolverBranch:
     def __init__(self):
         self.symbols = {}
         self.constraints = []
+        self.symbol_map = {}
+        self.fullyDefined = False
         
     def add_object(self, name, obj):
         self.symbols[name] = obj
@@ -90,11 +31,14 @@ class SolverBranch:
     def add_constraint(self, left, op, right):
         if op == '==':
             compareValue = {
-                Angle: 'as_sympy',
+                Angle: 'cos',
                 Line: 'length',
                 Number: 'as_sympy'
             }
-            self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
+            if isinstance(left, Angle) and isinstance(right, Number):
+                self.constraints.append(sp.Or(sp.Eq(left.cos(), sp.cos(right.as_sympy())), sp.Eq(left.cos(), -sp.cos(right.as_sympy()))))
+            else:
+                self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
         elif op[-2:] == 'on':
             if isinstance(left, Point) and isinstance(right, Line):
                 A, B = right.A, right.B
@@ -109,23 +53,80 @@ class SolverBranch:
             else:
                 raise ValueError("Currently unsupported 'on' between {left} and {right}")
         
+        refined_branches = self.refine()
+        valid_branches = list(filter(lambda x: x.is_valid(), refined_branches))
+        if not valid_branches:
+            raise ValueError(
+                f'Impossible constraint: {left} {op} {right}\n'
+            )
+        return valid_branches
+    
+    def __eq__(self, other):
+        if isinstance(other, SolverBranch):
+            return self.symbol_map == other.symbol_map
+        
+    
+    def refine(self):
+
+        for c in self.constraints:
+            if isinstance(c, sp.Or):
+                new_branches = []
+                for option in c.args:
+                    branched = self.clone()
+                    branched.constraints.remove(c)
+                    branched.constraints.append(option)
+                    new_branches.extend(branched.refine())
+                return new_branches
+
+        new_branches = []
+        sols = self.solve()
+        # Normalise various SymPy return shapes
+        if sols is None:
+            sols = []
+        elif isinstance(sols, dict):
+            sols = [sols]
+
+        if not sols:
+            new_branches.append(self.clone())
+            return new_branches
+      
+        # Branch for each solution
+        for sol in sols:
+            branched = self.clone()
+            branched.apply_solution(sol)
+
+            new_branches.append(branched)
+        return new_branches
+        
         
     def clone(self):
-        new_sol_set = SolverBranch()
-        new_sol_set.symbols = {name: copy.deepcopy(obj) for name, obj in self.symbols.items()}
-        new_sol_set.constraints = copy.deepcopy(self.constraints)
-        return new_sol_set
+        new_branch = SolverBranch()
+        new_branch.symbols = {name: copy.deepcopy(obj) for name, obj in self.symbols.items()}
+        new_branch.constraints = copy.deepcopy(self.constraints)
+        new_branch.symbol_map = copy.deepcopy(self.symbol_map)
+        return new_branch
     
     def solve(self):
         if not self.constraints:
             return {}
-        sols = sp.solve(self.constraints, self.all_symbols(), dict=True)
-        return sols
+        
+        eqs = []
+        ineqs = []
+        for c in self.constraints:
+            if (isinstance(c, sp.Equality)): eqs.append(c)
+            else: ineqs.append(c)
+        sols = sp.solve(eqs, self.all_symbols(), dict=True)
+        valid_sols = [sol for sol in sols if all([bool(ineq.subs(sol)) for ineq in ineqs])]
+        return valid_sols
 
     def apply_solution(self, solution):
         # Needs optimizing
         for obj in self.symbols.values():
             obj.substitute(solution)
+        for sym, val in solution.items():
+            self.symbol_map[sym] = val
+        
+
                     
     def all_symbols(self):
         syms = set()
@@ -133,4 +134,29 @@ class SolverBranch:
             syms |= obj.symbols()
         return list(syms)
     
+    def is_valid(self):
+        results = []
+        constraints = copy.deepcopy(self.constraints)
+
+        eqs = []
+        ineqs = []
+        for c in constraints:
+            if (isinstance(c, sp.Equality)): eqs.append(c)
+            else: ineqs.append(c)
+
+        for eq in eqs:
+            try:
+                simplified = sp.simplify(eq.subs(self.symbol_map))
+                if simplified == False: return False
+            except Exception:
+                continue
+
+        for ineq in ineqs:
+            try: 
+                simplified = sp.simplify(ineq.subs(self.symbol_map))
+                if simplified == False: return False
+            except Exception:
+                continue
+                
+        return True
     

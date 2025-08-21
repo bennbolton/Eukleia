@@ -29,5 +29,6 @@ class TokenType(Enum):
     NOT = auto()
     AND = auto()
     OR = auto()
+    DEG = auto()
     
     EOF = auto()

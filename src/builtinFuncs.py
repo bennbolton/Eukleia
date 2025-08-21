@@ -56,10 +56,10 @@ def get_type(*args, context=None):
         raise TypeError(f"Type only takes 1 positional argument, got {len(args)}")
     
 
-def printout(*args, context=None):
-    blue = '\033[94m'
-    end = '\033[0m'
-    print(f"{blue}{f" ".join([str(arg) for arg in args])}{end}")
+# def printout(*args, context=None):
+#     blue = '\033[94m'
+#     end = '\033[0m'
+#     print(f"{blue}{f" ".join([str(arg) for arg in args])}{end}")
 
 
 def rad2deg(*args, context=None):
@@ -80,7 +80,7 @@ BUILTINFUNCS = {
     "Angle": make_angle,
     "Point": make_point,
     "Type": get_type,
-    "Print": printout,
+    # "Print": printout,
     "Line": make_line,
     "Deg": rad2deg,
     "Rad": deg2rad,

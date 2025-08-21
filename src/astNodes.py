@@ -24,6 +24,8 @@ class ObjectReference(ASTNode):
         self.name = name
     def __repr__(self):
         return f"{type(self).__name__}({self.name})"
+    def __str__(self):
+        return self.name
 
 
 class ObjectNode(ASTNode):
@@ -110,6 +112,6 @@ class NotNode(ASTNode):
         return f"{type(self).__name__}({str(self.inner)})"
     
 class PrintNode(ASTNode):
-    func = printout
+    # func = printout
     def __init__(self, *args):
         self.args = args

@@ -57,7 +57,6 @@ class Parser:
         # VariableDefinition, ObjectDefinition, Constraint, QueryStatement, ShorthandDefinition, etc.
         left_expr = self.parseExpression()
         tok = self.peek()
-        
         if tok and tok.type == TokenType.COMMA:
             items = [left_expr]
             self.expect(TokenType.COMMA)
@@ -82,15 +81,18 @@ class Parser:
                         self.expect(TokenType.ON)
                         rhs_expr = self.parseExpression()
                         return NotNode(ConstraintNode(left_expr, 'on', rhs_expr))
-                    else:
-                        rhs_expr = self.parseExpression()
-                        return ConstraintNode(tok, 'on', rhs_expr)
+            else:
+                self.expect(TokenType.ON)
+                rhs_expr = self.parseExpression()
+                return ConstraintNode(left_expr, 'on', rhs_expr)
+
                 
 
         tok = self.peek()
         if tok and tok.type in self.DEF_AND_CON:
             op_tok = self.advance()
-            rhs_expr = self.parseExpression()
+            # rhs_expr = self.parseExpression()
+            rhs_expr = self.parseStatement()
             if op_tok.type == TokenType.EQUALS_SINGLE:
                 if isinstance(left_expr, VariableReference):
                     return VariableDefinition(left_expr, rhs_expr)
@@ -99,7 +101,7 @@ class Parser:
             else:
                 return ConstraintNode(left_expr, op_tok.value, rhs_expr)
         # Non declarative statements
-        elif tok and tok.type in (TokenType.NEWLINE, TokenType.EOF):
+        elif tok and tok.type in (TokenType.NEWLINE, TokenType.EOF, TokenType.HASH):
             return left_expr
         else:
             raise SyntaxError("Not sure what you're going for")
@@ -131,14 +133,15 @@ class Parser:
         elif tok.type == TokenType.NUMBER:
             self.expect(TokenType.NUMBER)
             num = NumberNode(tok.value)
-            if (nxt := self.peek()) and nxt.type == TokenType.IDENTIFIER and nxt.value == 'd':
+            if (nxt := self.peek()) and nxt.type == TokenType.DEG and nxt.value == 'd':
+                self.expect(TokenType.DEG)
                 return QueryNode('Rad', [num])
             else:
                 return num
             
         elif tok.type == TokenType.QUESTION:
             self.expect(TokenType.QUESTION)
-            if (next_tok := self.peek()) and next_tok.type in (TokenType.OBJECT, TokenType.IDENTIFIER):
+            if (next_tok := self.peek()) and next_tok.type in (TokenType.OBJECT, TokenType.IDENTIFIER, TokenType.ANGLE):
                 expr = self.parseExpression()
                 return PrintNode(expr)
             else:

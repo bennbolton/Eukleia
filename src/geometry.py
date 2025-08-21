@@ -12,18 +12,19 @@ class Number(Object):
     unknownCount = 0
     def __init__(self, value):
         if value is None:
-            self.value = sp.Symbol('?' + str(self.unknownCount))
+            self.value = sp.Symbol('?' + str(self.unknownCount), real=True)
             Number.unknownCount += 1
         else:
             self.value = value if isinstance(value, sp.Expr) else sp.Rational(value)
-        
-        self._solution_stack = []
     
     def as_sympy(self):
         if isinstance(self.value, sp.Expr):
             return self.value
         else:
             raise TypeError("Idk man")
+        
+    def isDefined(self):
+        return not self.value.has(sp.Symbol)
         
     def __add__(self, other):
         if isinstance(other, Number):
@@ -53,18 +54,15 @@ class Number(Object):
         return self.value.free_symbols
     
     def substitute(self, solution):
-        # self.value = sp.simplify(self.value.subs(solution))
-        self._solution_stack.append(solution)
+        self.value = sp.simplify(self.value.subs(solution))
 
-    def as_concrete(self):
-        concrete = self.value
-        for solution in self._solution_stack:
-            for sol in self._solution_stack:
-                concrete = concrete.subs(solution)
-            
     def __repr__(self):
         val = self.value
         return sp.sstr(val)
+    
+    def __eq__(self, other):
+        if isinstance(other, Number):
+            return self.value == other.value
 
 class Point(Object):
     def __init__(self, x, y):
@@ -85,6 +83,10 @@ class Point(Object):
     def substitute(self, solution):
         self.x.substitute(solution)
         self.y.substitute(solution)
+
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            return self.x == other.x and self.y == other.y
     
     
     def __repr__(self):
@@ -164,56 +166,19 @@ class Line(Object):
             syms |= point.symbols()
         return list(syms)
     
-    # def pointOnLine(self, point):
-    #     """
-    #     Returns True if the given point lies on the line, False otherwise.
-    #     Uses a small tolerance for floating-point comparison.
-    #     """
-    #     tol = 1e-9
-    #     # The line can be defined by two points or by a gradient and a point
-    #     if self.points and len(self.points) >= 2:
-    #         p1, p2 = self.points[0], self.points[1]
-    #         if p1.isDefined() and p2.isDefined() and point.isDefined():
-    #             # Handle vertical line
-    #             if abs(p2.x - p1.x) < tol:
-    #                 return abs(point.x - p1.x) < tol
-    #             else:
-    #                 # Line equation: (y - y1) = m*(x - x1)
-    #                 m = (p2.y - p1.y) / (p2.x - p1.x)
-    #                 expected_y = m * (point.x - p1.x) + p1.y
-    #                 return abs(point.y - expected_y) < tol
-    #     elif self.grad is not None and self.points and len(self.points) >= 1:
-    #         # Use gradient and a known point
-    #         p0 = self.points[0]
-    #         if p0.isDefined() and point.isDefined():
-    #             if abs(self.grad) == float('inf'):
-    #                 return abs(point.x - p0.x) < tol
-    #             else:
-    #                 expected_y = self.grad * (point.x - p0.x) + p0.y
-    #                 return abs(point.y - expected_y) < tol
-    #     return False
-    
-    # def __repr__(self):
-    #     pass
-    
+    def __repr__(self):
+        return str(self.length())
+        
 
 class Angle(Object):
-    def __init__(self, points=None, lines=None):
+    def __init__(self, points=None):
         self.points = points
-        self.lines = lines
         
-        # self.defined = self.isDefined()
-        
-        
-    # def isDefined(self):
-    #     if self.lines and len(self.lines) == 2 and all(getattr(l, 'grad') for l in self.lines):
-    #         return True
-    #     elif self.points and len(self.points) == 3 and all(p and p.isDefined() for p in self.points):
-    #         return True
-    #     else:
-    #         return False
         
     def as_sympy(self):
+        return sp.acos(self.cos())
+    
+    def cos(self):
         if len(self.points) == 3:
             BAx = self.points[0].x.value - self.points[1].x.value
             BAy = self.points[0].y.value - self.points[1].y.value
@@ -221,8 +186,8 @@ class Angle(Object):
             BCy = self.points[2].y.value - self.points[1].y.value
             
             dot = BAx*BCx + BAy*BCy
-            norm = sp.sqrt(BAx**2 + BAy**2) * sp.sqrt(BCx**2 + BCy**2)
-            return sp.acos(dot / norm)
+            norm = (sp.sqrt(BAx**2 + BAy**2) * sp.sqrt(BCx**2 + BCy**2))
+            return dot / norm
             
         else:
             raise ValueError("Bad Angle definition")
@@ -231,8 +196,8 @@ class Angle(Object):
         for point in self.points:
             point.substitute(solution)
         
-    # def __repr__(self):
-    #     pass
+    def __repr__(self):
+        return str(self.as_sympy())
 
         
 class Circle(Object):

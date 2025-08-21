@@ -44,6 +44,7 @@ class Lexer:
         'not': TokenType.NOT,
         'and': TokenType.AND,
         'or': TokenType.OR,
+        'd': TokenType.DEG
     }
     def __init__(self):
         self.pos = 0
