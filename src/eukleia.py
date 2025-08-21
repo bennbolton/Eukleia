@@ -11,12 +11,25 @@ class Eukleia:
         self.solver = Solver()
         self.interpreter = Interpreter(self)
 
-    def run(self, code):
+    def run(self, code, spit=False):
         self.tokens = self.lexer.generate_tokens(code)
-
+        
+        if spit:
+            print("TOKENS:")
+            print(self.tokens)
+        
         self.astNodes = self.parser.parseTokens(self.tokens)
-
+        
+        if spit:
+            print("NODES:")
+            for node in self.astNodes:
+                print(node)
+        
         self.interpreter.run(self.astNodes)
+
+        
+        
+
 
 
         

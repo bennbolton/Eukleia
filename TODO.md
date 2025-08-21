@@ -1,0 +1,4 @@
+- [ ] A, B, C = D, E, F #RHS commas dont work
+- [ ] Lazy evaluation (should fix print problem)
+- [ ] incremental solving with deferred substitution (constraint layering or lazy substitution model)
+- [ ] Print should copy and evaluate rather than refine current model

@@ -101,3 +101,15 @@ class CollectionNode(ASTNode):
         
     def __repr__(self):
         return f"{type(self).__name__}({', '.join(map(str, self.items))})"
+    
+class NotNode(ASTNode):
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __repr__(self):
+        return f"{type(self).__name__}({str(self.inner)})"
+    
+class PrintNode(ASTNode):
+    func = printout
+    def __init__(self, *args):
+        self.args = args

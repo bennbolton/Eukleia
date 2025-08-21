@@ -72,7 +72,20 @@ class Parser:
             self.expect(TokenType.ELLIPSIS)
             end = self.parseExpression()
             left_expr = self.handleEllipsis(left_expr, end)
-            
+        
+        #Goddamn this needs tidying later
+        elif tok and tok.type in (TokenType.NOT, TokenType.ON):
+            if tok.type == TokenType.NOT:
+                self.expect(TokenType.NOT)
+                if next_tok := self.peek():
+                    if next_tok.type == TokenType.ON:
+                        self.expect(TokenType.ON)
+                        rhs_expr = self.parseExpression()
+                        return NotNode(ConstraintNode(left_expr, 'on', rhs_expr))
+                    else:
+                        rhs_expr = self.parseExpression()
+                        return ConstraintNode(tok, 'on', rhs_expr)
+                
 
         tok = self.peek()
         if tok and tok.type in self.DEF_AND_CON:
@@ -115,14 +128,19 @@ class Parser:
         tok = self.peek()
         if tok is None:
             raise SyntaxError("Unexpected end of input")
-        if tok.type == TokenType.NUMBER:
-            self.advance()
-            return NumberNode(tok.value)
+        elif tok.type == TokenType.NUMBER:
+            self.expect(TokenType.NUMBER)
+            num = NumberNode(tok.value)
+            if (nxt := self.peek()) and nxt.type == TokenType.IDENTIFIER and nxt.value == 'd':
+                return QueryNode('Rad', [num])
+            else:
+                return num
+            
         elif tok.type == TokenType.QUESTION:
             self.expect(TokenType.QUESTION)
             if (next_tok := self.peek()) and next_tok.type in (TokenType.OBJECT, TokenType.IDENTIFIER):
                 expr = self.parseExpression()
-                return QueryNode('Print', [expr])
+                return PrintNode(expr)
             else:
                 return NumberNode(None)
         elif tok.type == TokenType.IDENTIFIER:
@@ -185,6 +203,8 @@ class Parser:
                 return CircleNode(*args)
             elif tok.value == "Angle":
                 return AngleNode(*args)
+            elif tok.value == "Print":
+                return PrintNode(*args)
             else:
                 return QueryNode(tok.value, args)
             

@@ -25,5 +25,9 @@ class TokenType(Enum):
     NEWLINE = auto()
     HASH = auto()
     COLON = auto()
+    ON = auto()
+    NOT = auto()
+    AND = auto()
+    OR = auto()
     
     EOF = auto()

@@ -16,8 +16,10 @@ class Lexer:
         'Angle',
         'Type',
         'Deg',
-        'Rad'
-    }    
+        'Rad',
+        'Triangle',
+    } 
+
     SYMBOLS = {
         '?': TokenType.QUESTION,
         '@': TokenType.AT,
@@ -36,7 +38,12 @@ class Lexer:
         '#': TokenType.HASH,
         ':': TokenType.COLON,
         '.': TokenType.DOT,
-        '...': TokenType.ELLIPSIS        
+        '...': TokenType.ELLIPSIS,
+
+        'on': TokenType.ON,
+        'not': TokenType.NOT,
+        'and': TokenType.AND,
+        'or': TokenType.OR,
     }
     def __init__(self):
         self.pos = 0
@@ -78,7 +85,10 @@ class Lexer:
                 # collect the rest
                 while ((nxt := self.peek()) and (nxt.isalnum() or nxt == '_')):
                     ident += self.next_char()
-                tokens.append(Token(TokenType.IDENTIFIER, ident))
+                if ident in self.SYMBOLS:
+                    tokens.append(Token(self.SYMBOLS[ident], ident))
+                else:
+                    tokens.append(Token(TokenType.IDENTIFIER, ident))
                     
             # if token is a number
             elif ch.isdigit() or (ch == '.' and self.peek() and self.peek().isdigit()):

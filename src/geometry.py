@@ -16,6 +16,8 @@ class Number(Object):
             Number.unknownCount += 1
         else:
             self.value = value if isinstance(value, sp.Expr) else sp.Rational(value)
+        
+        self._solution_stack = []
     
     def as_sympy(self):
         if isinstance(self.value, sp.Expr):
@@ -51,11 +53,18 @@ class Number(Object):
         return self.value.free_symbols
     
     def substitute(self, solution):
-        self.value = sp.simplify(self.value.subs(solution))
+        # self.value = sp.simplify(self.value.subs(solution))
+        self._solution_stack.append(solution)
+
+    def as_concrete(self):
+        concrete = self.value
+        for solution in self._solution_stack:
+            for sol in self._solution_stack:
+                concrete = concrete.subs(solution)
             
     def __repr__(self):
         val = self.value
-        return sp.pretty(val)
+        return sp.sstr(val)
 
 class Point(Object):
     def __init__(self, x, y):
@@ -83,8 +92,7 @@ class Point(Object):
     
 
 class Line(Object):
-    def __init__(self, *, points=None, grad=None):
-        self.grad = grad
+    def __init__(self, *, points=None):
         self.points = points
         if len(self.points) == 2:
             self.A = self.points[0]

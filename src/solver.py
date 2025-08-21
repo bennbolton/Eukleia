@@ -1,10 +1,9 @@
 import sympy as sp
 from .geometry import *
 import copy
-COUNT = 0
 class Solver:
-    def __init__(self, sets=None):
-        self.solution_sets = sets if sets else [SolutionSet()]
+    def __init__(self, branches=None):
+        self.branches = branches if branches else [SolverBranch()]
 
     def refine(self):
         """
@@ -17,10 +16,9 @@ class Solver:
 
         After processing all solvers, replace `self.solvers` with the new list.
         """
-        new_sets = []
-
-        for sol_set in self.solution_sets:
-            sols = sol_set.solve()
+        new_branches = []
+        for branch in self.branches:
+            sols = branch.solve()
 
             # Normalise various SymPy return shapes
             if sols is None:
@@ -30,31 +28,30 @@ class Solver:
 
             if not sols:
                 # Nothing to apply / underdetermined: keep this branch as-is
-                new_sets.append(sol_set)
+                new_branches.append(branch)
                 continue
-            # print(solver.symbols['C'])
             if len(sols) == 1:
                 # Apply directly to this branch
-                sol_set.apply_solution(sols[0])
-                new_sets.append(sol_set)
+                branch.apply_solution(sols[0])
+                new_branches.append(branch)
             else:
                 # Branch for each solution
                 for sol in sols:
-                    branched = sol_set.clone()
+                    branched = branch.clone()
                     branched.apply_solution(sol)
-                    new_sets.append(branched)
-            # print(solver.symbols['C'])
-        self.solution_sets = new_sets
+                    new_branches.append(branched)
+        self.branches = new_branches
         return self
     
     def add_object(self, name, obj):
-        for sol_set in self.solution_sets:
-            sol_set.add_object(name, obj)
+        for branch in self.branches:
+            branch.add_object(name, obj)
     
     def add_constraint(self, left, op, right):
-        for sol_set in self.solution_sets:
-            sol_set.add_constraint(left, op, right)
+        for branch in self.branches:
+            branch.add_constraint(left, op, right)
         self.refine()
+
 
     def reference(self, referenceNode):
         unique_values = self.get_symbol_possibilities(referenceNode)
@@ -65,8 +62,8 @@ class Solver:
         
     def get_symbol_possibilities(self, referenceNode):
         values = []
-        for sol_set in self.solution_sets:
-            obj = sol_set.symbols.get(referenceNode.name)
+        for branch in self.branches:
+            obj = branch.symbols.get(referenceNode.name)
             if obj is not None:
                 values.append(obj)
         # Remove duplicates (using repr for equality)
@@ -82,7 +79,7 @@ class Solver:
 
 
 
-class SolutionSet:
+class SolverBranch:
     def __init__(self):
         self.symbols = {}
         self.constraints = []
@@ -98,9 +95,23 @@ class SolutionSet:
                 Number: 'as_sympy'
             }
             self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
+        elif op[-2:] == 'on':
+            if isinstance(left, Point) and isinstance(right, Line):
+                A, B = right.A, right.B
+                Px, Py = left.x.as_sympy(), left.y.as_sympy()
+                Ax, Ay = A.x.as_sympy(), A.y.as_sympy()
+                Bx, By = B.x.as_sympy(), B.y.as_sympy()
+                expr = (Bx - Ax) * (Py - Ay) - (By - Ay) * (Px - Ax)
+                if op == 'NOT_on':
+                    self.constraints.append(sp.Ne(expr, 0))
+                else:
+                    self.constraints.append(sp.Eq(expr, 0))
+            else:
+                raise ValueError("Currently unsupported 'on' between {left} and {right}")
+        
         
     def clone(self):
-        new_sol_set = SolutionSet()
+        new_sol_set = SolverBranch()
         new_sol_set.symbols = {name: copy.deepcopy(obj) for name, obj in self.symbols.items()}
         new_sol_set.constraints = copy.deepcopy(self.constraints)
         return new_sol_set
@@ -108,8 +119,9 @@ class SolutionSet:
     def solve(self):
         if not self.constraints:
             return {}
-        return sp.solve(self.constraints, self.all_symbols(), dict=True)
-        
+        sols = sp.solve(self.constraints, self.all_symbols(), dict=True)
+        return sols
+
     def apply_solution(self, solution):
         # Needs optimizing
         for obj in self.symbols.values():
@@ -120,3 +132,5 @@ class SolutionSet:
         for obj in self.symbols.values():
             syms |= obj.symbols()
         return list(syms)
+    
+    

@@ -5,11 +5,12 @@ from src.builtinFuncs import printout
 
 def main():
 
-    if len(sys.argv) < 2:
-        print("Usage: python main.py filename.ekl")
-        sys.exit(1)
+    # if len(sys.argv) < 2:
+    #     print("Usage: python main.py filename.ekl")
+    #     sys.exit(1)
         
-    filename = sys.argv[1]
+    # filename = sys.argv[1]
+    filename = "test2.ekl"
     
     try:
         with open(filename, 'r') as f:
@@ -20,7 +21,7 @@ def main():
     
 
     program = Eukleia()
-    program.run(code)
+    program.run(code, True)
     
 
 if __name__ == "__main__":
