@@ -166,8 +166,17 @@ class Line(Object):
             syms |= point.symbols()
         return list(syms)
     
+    def gradient(self):
+        direction = self.direction()
+        return direction[1] / direction[0]
+
+    
     def __repr__(self):
         return str(self.length())
+    
+    def __eq__(self, other):
+        # Not technically correct, needs some sort of offset too
+        return self.direction() == other.direction()
         
 
 class Angle(Object):
@@ -175,22 +184,41 @@ class Angle(Object):
         self.points = points
         
         
-    def as_sympy(self):
-        return sp.acos(self.cos())
+    def as_sympy(self):        
+        # atan2(cross, dot) now gives correct oriented angle
+        return sp.atan2(self.cross(), self.dot())
     
-    def cos(self):
+    def cross(self):
+        if len(self.points) == 3:
+            BAx = self.points[0].x.value - self.points[1].x.value
+            BAy = self.points[0].y.value - self.points[1].y.value
+            BCx = self.points[2].x.value - self.points[1].x.value
+            BCy = self.points[2].y.value - self.points[1].y.value
+            return BAx*BCy - BAy*BCx
+    
+    def dot(self):
         if len(self.points) == 3:
             BAx = self.points[0].x.value - self.points[1].x.value
             BAy = self.points[0].y.value - self.points[1].y.value
             BCx = self.points[2].x.value - self.points[1].x.value
             BCy = self.points[2].y.value - self.points[1].y.value
             
-            dot = BAx*BCx + BAy*BCy
-            norm = (sp.sqrt(BAx**2 + BAy**2) * sp.sqrt(BCx**2 + BCy**2))
-            return dot / norm
+            return BAx*BCx + BAy*BCy
+    
+    def cos(self):
+        return self.dot() / self.norm()
             
-        else:
-            raise ValueError("Bad Angle definition")
+    def norm(self):
+        if len(self.points) == 3:
+            BAx = self.points[0].x.value - self.points[1].x.value
+            BAy = self.points[0].y.value - self.points[1].y.value
+            BCx = self.points[2].x.value - self.points[1].x.value
+            BCy = self.points[2].y.value - self.points[1].y.value
+            
+            return sp.sqrt(BAx**2 + BAy**2) * sp.sqrt(BCx**2 + BCy**2)
+    
+    def sin(self):
+        return self.cross() / self.norm()
         
     def substitute(self, solution):
         for point in self.points:
@@ -198,6 +226,15 @@ class Angle(Object):
         
     def __repr__(self):
         return str(self.as_sympy())
+    
+    def __eq__(self, other):
+        if isinstance(other, Angle):
+            return sp.simplify(sp.And(sp.Eq(self.cos(), other.cos()), 
+                          sp.Eq(self.sin(), other.sin())))
+        elif isinstance(other, Number):
+            return sp.simplify(sp.And(sp.Eq(self.cos(), sp.cos(other.as_sympy())), 
+                          sp.Eq(self.sin(), sp.sin(other.as_sympy()))))
+        # return sp.simplify(self.as_sympy() - other.as_sympy()) == 0
 
         
 class Circle(Object):

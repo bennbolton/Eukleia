@@ -24,14 +24,14 @@ class Interpreter:
     def printout(self):
         print(self.COLOURS['red'], end="")
         for obj, value in self.print_registry.items():
-            print(f"{self.COLOURS['red']}{obj}{self.COLOURS['green']} >> {self.COLOURS['end']}", end=self.COLOURS['blue'])
+            label = str(obj).rjust(10)
+            print(f"{self.COLOURS['red']}{label}{self.COLOURS['green']} >>  {self.COLOURS['end']}", end=self.COLOURS['blue'])
             if len(value) == 1:
-                print('\t', value[0])
+                print(value[0], '\n')
             else:
-                print("{\t")
-                for answer in value:
-                    print('\t', answer)
-                print("}\n")
+                for i, answer in enumerate(value):
+                    print(f"{" "*15 if i > 0 else ""}{answer}")
+                print()
         print(self.COLOURS['end'], end="")
         
     
@@ -41,6 +41,7 @@ class Interpreter:
             self.evaluate_node_per_branch(node)
             # print(self.print_registry)
             self.printout()
+            print(len(self.solver.branches))
             
 
             
@@ -112,7 +113,7 @@ class Interpreter:
                     self.print_registry[arg] = [evaluated_arg]
                 else:
                     for answer in self.print_registry.get(arg):
-                        if evaluated_arg == answer:
+                        if (evaluated_arg == answer) or (isinstance(evaluated_arg, Line) and evaluated_arg.length() == answer.length()):
                             break
                     else:
                         self.print_registry[arg].append(evaluated_arg)
@@ -143,7 +144,7 @@ class Interpreter:
             # self.solver.add_constraint(left, node.operator, right)
             new_branches = branch.add_constraint(left, node.operator, right)
             self.solver.add_branches(new_branches)
-            self.solver.branches.remove(branch)
+            # self.solver.branches.remove(branch)
             self.solver.prune()
             
         elif isinstance(node, QueryNode):

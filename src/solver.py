@@ -35,10 +35,14 @@ class SolverBranch:
                 Line: 'length',
                 Number: 'as_sympy'
             }
-            if isinstance(left, Angle) and isinstance(right, Number):
-                self.constraints.append(sp.Or(sp.Eq(left.cos(), sp.cos(right.as_sympy())), sp.Eq(left.cos(), -sp.cos(right.as_sympy()))))
-            else:
-                self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
+            print(left, right)
+            self.constraints.append(sp.Eq(left.as_sympy(), right.as_sympy()))
+            # self.constraints.append(sp.Eq(left.cross(), sp.sqrt(left.dot()**2 + left.cross()**2)*sp.sin(right.as_sympy())))
+            # if isinstance(left, Angle) and isinstance(right, Number):
+            #     self.constraints.append(left == right)
+            # else:
+                # self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
+
         elif op[-2:] == 'on':
             if isinstance(left, Point) and isinstance(right, Line):
                 A, B = right.A, right.B
@@ -52,6 +56,13 @@ class SolverBranch:
                     self.constraints.append(sp.Eq(expr, 0))
             else:
                 raise ValueError("Currently unsupported 'on' between {left} and {right}")
+        elif op == '//':
+            if not (isinstance(left, Line) and isinstance(right, Line)):
+                raise ValueError(f"Objects of type {type(left)} and {type(right)} cannot be parallel")
+            dirB_A = left.direction()
+            dirD_C = right.direction()
+            expr = dirB_A[0]*dirD_C[1] - dirB_A[1]*dirD_C[0]
+            self.constraints.append(sp.Eq(expr, 0))
         
         refined_branches = self.refine()
         valid_branches = list(filter(lambda x: x.is_valid(), refined_branches))
@@ -135,7 +146,6 @@ class SolverBranch:
         return list(syms)
     
     def is_valid(self):
-        results = []
         constraints = copy.deepcopy(self.constraints)
 
         eqs = []
@@ -147,6 +157,7 @@ class SolverBranch:
         for eq in eqs:
             try:
                 simplified = sp.simplify(eq.subs(self.symbol_map))
+                
                 if simplified == False: return False
             except Exception:
                 continue

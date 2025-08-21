@@ -43,7 +43,13 @@ class PointNode(ObjectNode):
 
 class LineNode(ObjectNode):
     func = make_line
-    pass
+
+    def __str__(self):
+        label = ""
+        for point in self.args:
+            label += str(point)
+        return label
+
 
 class CircleNode(ObjectNode):
     func = make_circle
@@ -51,7 +57,12 @@ class CircleNode(ObjectNode):
 
 class AngleNode(ObjectNode):
     func = make_angle
-    pass
+    
+    def __str__(self):
+        label = "<"
+        for point in self.args:
+            label += str(point)
+        return label
         
 class ObjectDefinition(ASTNode):
     def __init__(self, ident, value):
