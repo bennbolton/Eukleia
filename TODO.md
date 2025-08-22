@@ -4,3 +4,4 @@
 - [x] clearer printing when printing multiple things
 - [x] equality for lines
 - [x] better printing strategy for labels
+- [ ] better pruning logic to not remove symbolic too early but also make sure to remove redundant branches

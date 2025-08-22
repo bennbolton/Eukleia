@@ -36,12 +36,14 @@ class SolverBranch:
                 Number: 'as_sympy'
             }
             print(left, right)
-            self.constraints.append(sp.Eq(left.as_sympy(), right.as_sympy()))
+            if isinstance(left, Angle):
+                self.constraints.append(sp.Eq(left.as_sympy(), right.as_sympy()))
+            else:
             # self.constraints.append(sp.Eq(left.cross(), sp.sqrt(left.dot()**2 + left.cross()**2)*sp.sin(right.as_sympy())))
             # if isinstance(left, Angle) and isinstance(right, Number):
             #     self.constraints.append(left == right)
             # else:
-                # self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
+                self.constraints.append(sp.Eq(getattr(left, compareValue[type(left)])(), (getattr(right, compareValue[type(right)])())))
 
         elif op[-2:] == 'on':
             if isinstance(left, Point) and isinstance(right, Line):

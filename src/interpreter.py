@@ -71,8 +71,8 @@ class Interpreter:
                 op = node.inner.operator
                 right = self.evaluate(node.inner.right, branch)
                 new_branches = branch.add_constraint(left, f"NOT_{op}", right)
-                self.solver.add_branches(new_branches)
                 self.solver.branches.remove(branch)
+                self.solver.add_branches(new_branches)
                 self.solver.prune()
             else:
                 raise ValueError("Not must be paired with a constraint")
@@ -143,8 +143,8 @@ class Interpreter:
             right = self.evaluate(node.right, branch)
             # self.solver.add_constraint(left, node.operator, right)
             new_branches = branch.add_constraint(left, node.operator, right)
+            self.solver.branches.remove(branch)
             self.solver.add_branches(new_branches)
-            # self.solver.branches.remove(branch)
             self.solver.prune()
             
         elif isinstance(node, QueryNode):
