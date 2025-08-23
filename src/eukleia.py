@@ -23,7 +23,7 @@ class Eukleia:
         if spit:
             print("NODES:")
             for node in self.astNodes:
-                print(node)
+                print(repr(node))
         
         self.interpreter.run(self.astNodes)
 

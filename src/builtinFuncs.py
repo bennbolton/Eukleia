@@ -1,53 +1,26 @@
 from .geometry import *
 
+def make_number(*args):
+    raise
 
-def make_number(*args, context=None):
-    # Number
-    if len(args) == 1 and isinstance(args[0], (int, float)):
-        return Number(args[0])
-    # Unknown or inf
-    elif len(args) == 1 and args[0] is None:
-        return Number(None)
-    elif args[0] == 'inf':
-        return Number(args[0])
-
-
-def make_circle(*args, context=None):
+def make_circle(*args):
     # Circle(x, y, r)
-    if len(args) == 3 and all(isinstance(a, Number) for a in args):
-        x, y, r = args
-        return Circle(center=Point(x, y), radius=r)
-    
     # Circle(O, r)
-    elif len(args) == 2 and isinstance(args[0], Point) and isinstance(args[1], Number):
-        center, r = args
-        return Circle(center=center, radius=r.value)
-    
-    elif len(args) >= 3 and all(isinstance(a, Point) for a in args):
-        return Circle(points=args)
-    
-    else:
-        raise TypeError("Unknown argument arrangement for Circle()")
+    raise TypeError("Unknown argument arrangement for Circle()")
 
-def make_point(*args, context=None):
-    if len(args) == 1 and isinstance(args[0], tuple):
-        return Point(args[0][0], args[0][1])
-    elif len(args) == 2 and all(isinstance(a, Number) for a in args):
-        return Point(args[0], args[1])
-    else:
-        raise TypeError("Unknown argument arrangement for Point()")
+def make_point(*args):
+    if len(args) == 1 and isinstance(args[0], str):
+        return Point(args[0])
     
-def make_line(*args, context=None):
-
-    # print([type(a) for a in args])
+def make_line(*args):
     if all(isinstance(a, Point) for a in args):
         return Line(points=args)
     
 def make_angle(*args, context=None):
     if len(args) == 3 and all(isinstance(a, Point) for a in args):
-        return Angle(points=args)
-    # elif len(args) == 3 and all(isinstance(a, str) for a in args):
-    #     return Angle(points=)
+        AB = make_line(args[:2])
+        BC = make_line(args[1:])
+        return Angle(lines=[AB, BC])
 
 def get_type(*args, context=None):
     if len(args) == 1:

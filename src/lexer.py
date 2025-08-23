@@ -110,7 +110,7 @@ class Lexer:
                     symType = self.SYMBOLS.get(ch)
                     tokens.extend([Token(symType, ch)]*occ)
             else:
-                raise Exception(f'Unexpected character: {ch}')
+                tokens.append(Token(TokenType.INVALID_TOKEN))
         
         tokens.append(Token(TokenType.EOF))
         return tokens

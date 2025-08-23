@@ -17,13 +17,13 @@ class VariableReference(ASTNode):
     def __init__(self, name):
         self.name = name
     def __repr__(self):
-        return f"{type(self).__name__}({self.name})" 
+        return f"{type(self).__name__}({repr(self.name)})" 
     
 class ObjectReference(ASTNode):
     def __init__(self, name):
         self.name = name
     def __repr__(self):
-        return f"{type(self).__name__}({self.name})"
+        return f"{type(self).__name__}({repr(self.name)})"
     def __str__(self):
         return self.name
 
@@ -35,7 +35,7 @@ class ObjectNode(ASTNode):
         pass
     
     def __repr__(self):
-        return f"{type(self).__name__}({', '.join(map(str, self.args))})"
+        return f"{type(self).__name__}({', '.join(map(repr, self.args))})"
     
 class PointNode(ObjectNode):
     func = make_point
@@ -69,7 +69,7 @@ class ObjectDefinition(ASTNode):
         self.ident = ident
         self.value = value
     def __repr__(self):
-        return f'{type(self).__name__}({self.ident}, {self.value})'
+        return f'{type(self).__name__}({repr(self.ident)}, {repr(self.value)})'
 
 
 class VariableDefinition(ASTNode):
@@ -86,7 +86,7 @@ class ConstraintNode(ASTNode):
         self.operator = operator
         self.right = right
     def __repr__(self):
-        return f"{type(self).__name__}({self.left}, {self.operator}, {self.right})"
+        return f"{type(self).__name__}({repr(self.left)}, {repr(self.operator)}, {repr(self.right)})"
         
 
 class QueryNode(ASTNode):

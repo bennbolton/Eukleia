@@ -24,10 +24,12 @@ class Interpreter:
     def printout(self):
         print(self.COLOURS['red'], end="")
         for obj, value in self.print_registry.items():
-            label = str(obj).rjust(10)
+            label = repr(obj).rjust(10)
             print(f"{self.COLOURS['red']}{label}{self.COLOURS['green']} >>  {self.COLOURS['end']}", end=self.COLOURS['blue'])
             if len(value) == 1:
                 print(value[0], '\n')
+            elif len(value) == 0:
+                print("Undeterminable", "\n")
             else:
                 for i, answer in enumerate(value):
                     print(f"{" "*15 if i > 0 else ""}{answer}")
@@ -39,9 +41,11 @@ class Interpreter:
         for node in nodes:
             self.print_registry = {}
             self.evaluate_node_per_branch(node)
-            # print(self.print_registry)
-            self.printout()
-            print(len(self.solver.branches))
+            if self.print_registry:
+                solutions = self.solver.solve(list(self.print_registry.keys()))
+                for t in solutions:
+                    self.print_registry[t] = solutions[t]
+                self.printout()
             
 
             
@@ -55,12 +59,12 @@ class Interpreter:
         
         # -- Numbers
         if isinstance(node, NumberNode):
-            return type(node).func(node.value)
+            return Number(node.value)
         
         elif isinstance(node, (ObjectReference, VariableReference)):
                 val = branch.symbols.get(node.name)
                 if val is None:
-                    self.evaluate(ObjectDefinition(node.name, PointNode(NumberNode(None), NumberNode(None))), branch)
+                    self.evaluate(ObjectDefinition(node, Point(node.name)), branch)
                     return branch.symbols.get(node.name)
                 else:
                     return val
@@ -99,32 +103,40 @@ class Interpreter:
                     for i in range(len(ident)-1):
                         fresh_value = self.evaluate(node.value, branch)
                         self.evaluate(ObjectDefinition(ident.items[i+1], fresh_value), branch)
-            # Obj = Collection
+                            # Obj = Collection
             elif isinstance(value, CollectionNode):
-                branch.add_object(ident, Collection(value.items))
+                branch.add_symbol(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                branch.add_object(ident, value)
+                branch.add_symbol(value)
 
         elif isinstance(node, PrintNode):
             for arg in node.args:
                 evaluated_arg = self.evaluate(arg, branch)
-                if self.print_registry.get(arg) is None:
-                    self.print_registry[arg] = [evaluated_arg]
-                else:
-                    for answer in self.print_registry.get(arg):
-                        if (evaluated_arg == answer) or (isinstance(evaluated_arg, Line) and evaluated_arg.length() == answer.length()):
-                            break
-                    else:
-                        self.print_registry[arg].append(evaluated_arg)
+                # if self.print_registry.get(arg) is None:
+                #     self.print_registry[arg] = [evaluated_arg]
+                # else:
+                #     for answer in self.print_registry.get(arg):
+                #         if (evaluated_arg == answer) or (isinstance(evaluated_arg, Line) and evaluated_arg.length() == answer.length()):
+                #             break
+                #     else:
+                #         self.print_registry[arg].append(evaluated_arg)
+                self.print_registry[evaluated_arg] = []
             
         # -- Keywords 
-        elif isinstance(node, (PointNode, CircleNode, LineNode, AngleNode)):
-            evaluated_args = []
-            for arg in node.args:
-                evaluated_arg = self.evaluate(arg, branch)
-                evaluated_args.append(evaluated_arg)
-            return type(node).func(*evaluated_args)
+        elif isinstance(node, PointNode):
+            point = Point(node.name)
+            return point
+        
+        elif isinstance(node, LineNode):
+            points = [self.evaluate(arg, branch) for arg in node.args]
+            line = Line(points)
+            return line
+        
+        elif isinstance(node, AngleNode):
+            points = [self.evaluate(arg, branch) for arg in node.args]
+            angle = Angle(points)
+            return angle
         
         elif isinstance(node, BinaryOp):
             left = self.evaluate(node.left, branch)
@@ -141,11 +153,7 @@ class Interpreter:
         elif isinstance(node, ConstraintNode):
             left = self.evaluate(node.left, branch)
             right = self.evaluate(node.right, branch)
-            # self.solver.add_constraint(left, node.operator, right)
-            new_branches = branch.add_constraint(left, node.operator, right)
-            self.solver.branches.remove(branch)
-            self.solver.add_branches(new_branches)
-            self.solver.prune()
+            branch.add_constraint(Constraint(left, node.operator, right))
             
         elif isinstance(node, QueryNode):
             evaluated_args = []

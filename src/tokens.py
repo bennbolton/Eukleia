@@ -30,5 +30,6 @@ class TokenType(Enum):
     AND = auto()
     OR = auto()
     DEG = auto()
+    INVALID_TOKEN = auto()
     
     EOF = auto()
