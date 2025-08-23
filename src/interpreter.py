@@ -113,14 +113,6 @@ class Interpreter:
         elif isinstance(node, PrintNode):
             for arg in node.args:
                 evaluated_arg = self.evaluate(arg, branch)
-                # if self.print_registry.get(arg) is None:
-                #     self.print_registry[arg] = [evaluated_arg]
-                # else:
-                #     for answer in self.print_registry.get(arg):
-                #         if (evaluated_arg == answer) or (isinstance(evaluated_arg, Line) and evaluated_arg.length() == answer.length()):
-                #             break
-                #     else:
-                #         self.print_registry[arg].append(evaluated_arg)
                 self.print_registry[evaluated_arg] = []
             
         # -- Keywords 

@@ -1,7 +1,3 @@
-AB == 4
-<CAB == <ABC
-BC == 5
-?CA
-# ConstraintNode(LineNode(ObjectReference('A'), ObjectReference('B')), '==', NumberNode(4.0))
-# ConstraintNode(AngleNode(ObjectReference('C'), ObjectReference('A'), ObjectReference('B')), '==', AngleNode(ObjectReference('C'), ObjectReference('B'), ObjectReference('A')))
-# ConstraintNode(LineNode(ObjectReference('B'), ObjectReference('C')), '==', NumberNode(5.0))
+<ABC == 100
+<BAC == <ACB
+?<BAC

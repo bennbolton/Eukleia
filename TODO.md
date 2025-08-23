@@ -1,7 +1,2 @@
-- [x] A, B, C = D, E, F #RHS commas dont work
-- [ ] Lazy evaluation
-- [x] what gets printed when printing lines and angles
-- [x] clearer printing when printing multiple things
-- [x] equality for lines
-- [x] better printing strategy for labels
-- [ ] better pruning logic to not remove symbolic too early but also make sure to remove redundant branches
+- [ ] remove 'd' for degrees
+- [ ] make printing angles and lines be in the order the user typed

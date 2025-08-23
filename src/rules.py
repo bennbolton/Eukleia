@@ -110,25 +110,24 @@ class Facts:
 # =====================================================================
 class GeometricRule:
     kind : str
-    
-    def apply(self, cons, facts):
+    def apply(self, *args, facts:Facts=None) -> list:
         raise NotImplementedError
 
-# AB == ?
+# AB == X
 class LineLengthRule(GeometricRule):
     kind = "Line == Number"
     def apply(self, cons, facts: Facts):
         L, R = cons.out()
         changed = facts.set_segment_value(L, R.value)
-        return facts.seg_dsu.find(L) if changed else None
+        return [L] if changed else None
 
-# <ABC == 30
+# <ABC == X
 class AngleValueRule(GeometricRule):
     kind = "Angle == Number"
     def apply(self, cons, facts: Facts):
         L, R = cons.out()
         changed = facts.set_angle_value(L, R.value)
-        return facts.ang_dsu.find(L) if changed else None
+        return [L] if changed else None
 
 # AB == CD
 class LineEqualityRule(GeometricRule):
@@ -136,39 +135,105 @@ class LineEqualityRule(GeometricRule):
     def apply(self, cons, facts):
         L, R, = cons.out()
         changed = facts.merge_segments(L, R)
-        return facts.seg_dsu.find(L) if changed else None
-    
+        return [L,R] if changed else None
+
+# <ABC == <DEF
 class AngleEqualityRule(GeometricRule):
     kind = "Angle == Angle"
     def apply(self, cons, facts):
         L, R = cons.out()
         changed = facts.merge_angles(L, R)
-        return facts.ang_dsu.find(L) if changed else None
+        return [L,R] if changed else None
+
+# if AB == X and BC == X then AB == BC
+class LineDefinitionEqualityRule(GeometricRule):
+    kind = 'Line'
+    def apply(self, changed_line, facts:Facts):
+        changed_segments = []
+        val1 = facts.get_segment_value(changed_line)
+        if val1 is None: return changed_segments
+        for other, val2 in facts.seg_val.items():
+            if abs(val1 - val2) < 1e-10:
+                changed = facts.merge_segments(changed_line, other)
+                if changed:
+                    changed_segments.extend([changed_line, other])
+        return changed_segments
     
-class IsoscelesAnglesRule(GeometricRule):
+# if <ABC == X and <DEF == X then <ABC == <DEF
+class AngleDefinitionEqualityRule(GeometricRule):
+    kind = 'Angle'
+    def apply(self, changed_angle, facts:Facts):
+        changed_angles = []
+        val1 = facts.get_angle_value(changed_angle)
+        if val1 is None: return changed_angles
+        for other, val2 in facts.ang_val.items():
+            if abs(val1 - val2) < 1e-10:
+                changed = facts.merge_angles(changed_angle, other)
+                if changed:
+                    changed_angles.extend([changed_angle, other])
+        return changed_angles
+
+# if <ABC == <BCA then AB == BC
+class IsoscelesAngleRule(GeometricRule):
     kind = "Angle"
     def apply(self, changed_angle, facts: Facts):
-        changed_segments = []
-
+        changed_segments= []
         triangles = [tri for tri in facts.triangles.values() if set(changed_angle.points) <= frozenset(tri.points)]
-
         for tri in triangles:
-            for vertex in tri.points:
-                if vertex == changed_angle.vertex:
-                    continue
-                
-                
-                if facts.ang_dsu.find(changed_angle) == facts.ang_dsu.find(tri.angles[vertex]):
-
-                    side1 = tri.sides[changed_angle.vertex]
-                    side2 = tri.sides[vertex]
+            for i in range(3):
+                p1 = tri.points[i]
+                p2 = tri.points[(i+1)%3]
+                if facts.ang_dsu.find(tri.angles[p1]) == facts.ang_dsu.find(tri.angles[p2]):
+                    side1 = tri.sides[p1]
+                    side2 = tri.sides[p2]
                     try:
                         if facts.merge_segments(side1, side2):
-                            changed_segments.append(facts.seg_dsu.find(side1))
+                            changed_segments.extend([side1, side2])
                     except ValueError:
                         raise ValueError("Impossible constraint: Isosceles rule conflict")
         return changed_segments
 
+# if AB == BC then <ABC == <BCA
+class IsoscelesSideRule(GeometricRule):
+    kind = "Line"
+    def apply(self, changed_angle, facts: Facts):
+        changed_angles= []
+        triangles = [tri for tri in facts.triangles.values() if set(changed_angle.points) <= frozenset(tri.points)]
+        for tri in triangles:
+            for i in range(3):
+                p1 = tri.points[i]
+                p2 = tri.points[(i+1)%3]
+                if facts.seg_dsu.find(tri.sides[p1]) == facts.seg_dsu.find(tri.sides[p2]):
+                    ang1 = tri.angles[p1]
+                    ang2 = tri.angles[p2]
+                    try:
+                        if facts.merge_angles(ang1, ang2):
+                            changed_angles.extend([ang1, ang2])
+                    except ValueError:
+                        raise ValueError("Impossible constraint: Isosceles rule conflict")
+        return changed_angles
 
+# Sum(<ABC, <BCA, <ACB) == 180
+class TriangleAngles180Rule(GeometricRule):
+    kind = 'Angle'
+    def apply(self, changed_angle, facts:Facts):
+        changed_angles = []
+        triangles = [tri for tri in facts.triangles.values() if set(changed_angle.points) <= frozenset(tri.points)]
+        for tri in triangles:
+            known_angles, unknown_angles = [], []
+            for angle in tri.angles.values():
+                (known_angles if facts.get_angle_value(angle) is not None else unknown_angles).append(angle)
+            if len(known_angles) == 2 and len(unknown_angles) == 1:
+                new_ang = 180 - sum([facts.get_angle_value(ang) for ang in known_angles])
+                changed = facts.set_angle_value(unknown_angles[0], new_ang)
+                if changed:
+                    changed_angles.extend(unknown_angles)
+            elif len(known_angles) == 1 and len(unknown_angles) == 2:
+                if facts.ang_dsu.find(unknown_angles[0]) == facts.ang_dsu.find(unknown_angles[1]):
+                    known_angle = facts.get_angle_value(known_angles[0])
+                    other_angles = (180 - known_angle) / 2
+                    changed = facts.set_angle_value(unknown_angles[0], other_angles)
+                    if changed:
+                        changed_angles.extend(unknown_angles)      
+        return changed_angles
     
-

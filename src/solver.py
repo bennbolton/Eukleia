@@ -27,12 +27,17 @@ class SolverBranch:
 
     def add_constraint(self, constraint:Constraint):
         self.constraints.append(constraint)
-        for side in ("left", "right"):
-            obj = getattr(constraint, side)
-            if isinstance(obj, Angle):
-                self.ensure_trianle(obj)
+        L,R = constraint.left, constraint.right
+        if isinstance(L, Angle) and ((isinstance(R, Number) and R not in (0,180,360)) or isinstance(R, Angle)):
+            self.ensure_triangle(L)
+            if isinstance(R, Angle):
+                self.ensure_triangle(R)
 
-    def ensure_trianle(self, angle: Angle):
+    def ensure_triangle(self, angle: Angle, value=None):
+        pts = angle.points
+        if pts[0] is pts[1] or pts[0] is pts[2] or pts[1] is pts[2]:
+            return None
+        
         key = frozenset(angle.points)
         if key not in self.facts.triangles:
             self.facts.triangles[key] = Triangle(angle.points)
@@ -58,12 +63,13 @@ class SolverBranch:
                     if con.consType() == rule.kind:
                         changed_values = rule.apply(con, self.facts)
                         if changed_values is not None:
-                            agenda.insert(0,changed_values)
+                            agenda[0:0] = changed_values
                     
                 else:
                     if type(con).__name__ == rule.kind:
                         changed_values = rule.apply(con, self.facts)
                         if changed_values is not None:
-                            agenda.insert(0,changed_values)
+                            agenda[0:0] = changed_values
             if canStop(targets):
                 return {t: self.facts.get_value(t) for t in targets}
+        return {t: self.facts.get_value(t) or "Undeterminable" for t in targets}
