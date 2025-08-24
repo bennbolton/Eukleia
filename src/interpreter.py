@@ -62,10 +62,10 @@ class Interpreter:
             return Number(node.value)
         
         elif isinstance(node, (ObjectReference, VariableReference)):
-                val = branch.symbols.get(node.name)
+                val = branch.points.get(node.name)
                 if val is None:
                     self.evaluate(ObjectDefinition(node, Point(node.name)), branch)
-                    return branch.symbols.get(node.name)
+                    return branch.points.get(node.name)
                 else:
                     return val
         
@@ -105,10 +105,10 @@ class Interpreter:
                         self.evaluate(ObjectDefinition(ident.items[i+1], fresh_value), branch)
                             # Obj = Collection
             elif isinstance(value, CollectionNode):
-                branch.add_symbol(ident, Collection(value.items))
+                branch.add_point(ident, Collection(value.items))
             # Stanadrd A = B
             else:
-                branch.add_symbol(value)
+                branch.add_point(value)
 
         elif isinstance(node, PrintNode):
             for arg in node.args:

@@ -99,6 +99,11 @@ class Triangle(Object):
             B: Angle([A,B,C]),
             C: Angle([A,C,B])
         }
+    
+    def is_degenerate(self, facts):
+        if any([facts.get_angle_value(self.angles[p]) in (0,180) for p in self.points]): return True
+        elif any([facts.get_segment_value(self.sides[p]) == 0 for p in self.points]):return True
+        else: return False
 
 class Constraint(EklPrim):
     def __init__(self, left, op, right):

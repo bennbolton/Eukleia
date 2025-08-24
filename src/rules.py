@@ -35,66 +35,35 @@ class Facts:
     def __init__(self):
         self.seg_dsu = DSU()
         self.ang_dsu = DSU()
+        self.parallel_dsu = DSU()
         self.seg_val = {}  # rep -> value
         self.ang_val = {}
         self.triangles = {}
 
-    # --- Segments ---
-    def merge_segments(self, s1, s2):
-        r1, r2 = self.seg_dsu.find(s1), self.seg_dsu.find(s2)
+    def _merge_generic(self, x1, x2, dsu, values):
+        r1, r2 = dsu.find(x1), dsu.find(x2)
         changed_objects = []
         if r1 == r2:
             return False
-        v1, v2 = self.seg_val.get(r1), self.seg_val.get(r2)
-        r = self.seg_dsu.union(r1, r2)
-        if v1 is not None and v2 is not None and abs(v1 - v2) > 1e-12:
-            raise ValueError("Impossible constraint: segment values conflict")
-        if v1 is not None:
-            self.seg_val[r] = v1
-        if v2 is not None:
-            self.seg_val[r] = v2
-        return True
-
-    def set_segment_value(self, s, val):
-        r = self.seg_dsu.find(s)
-        v = self.seg_val.get(r)
-        if v is None:
-            self.seg_val[r] = float(val)
-            return True
-        if abs(v - val) > 1e-12:
-            raise ValueError("Impossible constraint: segment already has different value")
-        return False
-
-    def get_segment_value(self, s):
-        return self.seg_val.get(self.seg_dsu.find(s))
-
-    # --- Angles ---
-    def merge_angles(self, a1, a2):
-        r1, r2 = self.ang_dsu.find(a1), self.ang_dsu.find(a2)
-        if r1 == r2:
-            return False
-        v1, v2 = self.ang_val.get(r1), self.ang_val.get(r2)
-        r = self.ang_dsu.union(r1, r2)
+        v1, v2 = values.get(r1), values.get(r2)
+        r = dsu.union(r1, r2)
         if v1 is not None and v2 is not None and abs(v1 - v2) > 1e-10:
-            raise ValueError("Impossible constraint: angle values conflict")
+            raise ValueError(f"Impossible constraint: {x1} or {x2} values conflinct")
         if v1 is not None:
-            self.ang_val[r] = v1
+            values[r] = v1
         if v2 is not None:
-            self.ang_val[r] = v2
+            values[r] = v2
         return True
-
-    def set_angle_value(self, a, deg):
-        r = self.ang_dsu.find(a)
-        v = self.ang_val.get(r)
+    
+    def _set_value_generic(self, x, dsu, values, val):
+        r = dsu.find(x)
+        v = values.get(r)
         if v is None:
-            self.ang_val[r] = float(deg)
+            values[r] = val
             return True
-        if abs(v - deg) > 1e-10:
-            raise ValueError("Impossible constraint: angle already has different value")
+        if abs(v - val) > 1e-10:
+            raise ValueError(f"Impossible constraint: {x} already has different value")
         return False
-
-    def get_angle_value(self, a):
-        return self.ang_val.get(self.ang_dsu.find(a))
     
     def get_value(self, t):
         if isinstance(t, Angle):
@@ -104,17 +73,42 @@ class Facts:
         else:
             raise
 
+    # --- Segments ---
+    def merge_segments(self, s1, s2):
+        return self._merge_generic(s1, s2, self.seg_dsu, self.seg_val)
+
+    def set_segment_value(self, s, val):
+        return self._set_value_generic(s, self.seg_dsu, self.seg_val, val)
+
+    def get_segment_value(self, s):
+        return self.seg_val.get(self.seg_dsu.find(s))
+
+    # --- Angles ---
+    def merge_angles(self, a1, a2):
+        return self._merge_generic(a1, a2, self.ang_dsu, self.ang_val)
+
+    def set_angle_value(self, a, deg):
+        return self._set_value_generic(a, self.ang_dsu, self.ang_val, deg)
+
+    def get_angle_value(self, a):
+        return self.ang_val.get(self.ang_dsu.find(a))
+    
+    # --- Parallels ---
+    def merge_parallels(self, s1, s2):
+        return self._merge_generic(s1, s2, self.parallel_dsu, {})
+
 
 # =====================================================================
 # Rules: the backbone rules of geometry
 # =====================================================================
-class GeometricRule:
+# --- Definition Rules ---
+class DefinitionRule:
     kind : str
-    def apply(self, *args, facts:Facts=None) -> list:
+    def apply(self, constraint, facts:Facts):
         raise NotImplementedError
 
 # AB == X
-class LineLengthRule(GeometricRule):
+class LineLengthDefintion(DefinitionRule):
     kind = "Line == Number"
     def apply(self, cons, facts: Facts):
         L, R = cons.out()
@@ -122,7 +116,7 @@ class LineLengthRule(GeometricRule):
         return [L] if changed else None
 
 # <ABC == X
-class AngleValueRule(GeometricRule):
+class AngleValueDefintion(DefinitionRule):
     kind = "Angle == Number"
     def apply(self, cons, facts: Facts):
         L, R = cons.out()
@@ -130,7 +124,7 @@ class AngleValueRule(GeometricRule):
         return [L] if changed else None
 
 # AB == CD
-class LineEqualityRule(GeometricRule):
+class LineEqualityDefinition(DefinitionRule):
     kind = "Line == Line"
     def apply(self, cons, facts):
         L, R, = cons.out()
@@ -138,13 +132,29 @@ class LineEqualityRule(GeometricRule):
         return [L,R] if changed else None
 
 # <ABC == <DEF
-class AngleEqualityRule(GeometricRule):
+class AngleEqualityDefinition(DefinitionRule):
     kind = "Angle == Angle"
     def apply(self, cons, facts):
         L, R = cons.out()
         changed = facts.merge_angles(L, R)
         return [L,R] if changed else None
 
+# AB // CD
+class LineParallelDefinition(DefinitionRule):
+    kind = "Line // Line"
+    def apply(self, cons, facts:Facts):
+        L, R = cons.out()
+        changed = facts.merge_parallels(L, R)
+        return [L,R] if changed else None
+
+# --- Geometric Rules ---
+class GeometricRule:
+    kind : str
+    def apply(self, *args, facts:Facts=None) -> list:
+        raise NotImplementedError
+    def getTriangles(self, obj, facts):
+        return [tri for tri in facts.triangles.values() if set(obj.points) <= frozenset(tri.points)]
+    
 # if AB == X and BC == X then AB == BC
 class LineDefinitionEqualityRule(GeometricRule):
     kind = 'Line'
@@ -176,10 +186,9 @@ class AngleDefinitionEqualityRule(GeometricRule):
 # if <ABC == <BCA then AB == BC
 class IsoscelesAngleRule(GeometricRule):
     kind = "Angle"
-    def apply(self, changed_angle, facts: Facts):
+    def apply(self, value, facts: Facts):
         changed_segments= []
-        triangles = [tri for tri in facts.triangles.values() if set(changed_angle.points) <= frozenset(tri.points)]
-        for tri in triangles:
+        for tri in self.getTriangles(value, facts):
             for i in range(3):
                 p1 = tri.points[i]
                 p2 = tri.points[(i+1)%3]
@@ -196,10 +205,9 @@ class IsoscelesAngleRule(GeometricRule):
 # if AB == BC then <ABC == <BCA
 class IsoscelesSideRule(GeometricRule):
     kind = "Line"
-    def apply(self, changed_angle, facts: Facts):
+    def apply(self, value, facts: Facts):
         changed_angles= []
-        triangles = [tri for tri in facts.triangles.values() if set(changed_angle.points) <= frozenset(tri.points)]
-        for tri in triangles:
+        for tri in self.getTriangles(value, facts):
             for i in range(3):
                 p1 = tri.points[i]
                 p2 = tri.points[(i+1)%3]
@@ -236,4 +244,61 @@ class TriangleAngles180Rule(GeometricRule):
                     if changed:
                         changed_angles.extend(unknown_angles)      
         return changed_angles
-    
+
+# class ParallelCorrespondingAnglesRule(GeometricRule):
+#     kind = "Angle"
+#     def apply(self, angle, facts:Facts):
+#         for line1 in angle.lines:
+#             for line2 in facts.parallel_dsu.parent:
+#                 if facts.parallel_dsu.find(line1) == facts.parallel_dsu.find(line2):
+
+# a/sin(A) = b/sin(B) = c/sin(C)
+class TriangleSinRule(GeometricRule):
+    kind = "Angle or Line"
+    def apply(self, value, facts:Facts):
+        changed_values = []
+        for tri in self.getTriangles(value, facts):
+            for p1 in tri.points:
+                ang1 = facts.get_angle_value(tri.angles[p1])
+                side1 = facts.get_segment_value(tri.sides[p1])
+                if ang1 is not None and side1 is not None:
+                    for p2 in tri.points:
+                        if p1 == p2:
+                            continue
+                        ang2 = facts.get_angle_value(tri.angles[p2])
+                        side2 = facts.get_segment_value(tri.sides[p2])
+                        if ang2 is not None and side2 is None:
+                            val = sp.sin(sp.rad(ang2)) * side1 / sp.sin(sp.rad(ang1))
+                            if facts.set_segment_value(tri.sides[p2], val):
+                                changed_values.append(side2)
+                        elif ang2 is None and side2 is not None:
+                            val = sp.deg(sp.asin(side2 * sp.sin(sp.rad(ang1)) / side1))
+                            if facts.set_angle_value(tri.angles[p2], val):
+                                changed_values.append(ang2)
+        return changed_values
+
+# a^2 = b^2 + c^2 -2*b*c*cos(A)
+class TriangleCosineRule(GeometricRule):
+    kind = "Angle or Line"
+    def apply(self, value, facts:Facts):
+        changed_values = []
+        for tri in self.getTriangles(value, facts):
+            sides = {point: facts.get_segment_value(tri.sides[point]) for point in tri.points}
+            angles = {point: facts.get_angle_value(tri.angles[point]) for point in tri.points}
+
+            # Unknown side
+            for p1, length in sides.items():
+                if length is None:
+                    other_sides = [val for p, val in sides.items() if p != p1 and val is not None]
+                    if len(other_sides) == 2 and angles[p1] is not None:
+                        s1, s2 = other_sides
+                        val = sp.sqrt(s1**2 + s2**2 - 2*s1*s2*sp.cos(sp.rad(angles[p1])))
+                        if facts.set_segment_value(tri.sides[p1], val):
+                            changed_values.append(tri.sides[p1])
+                elif all(sides.values()):
+                    s1, s2 = [val for p, val in sides.items() if p != p1 and val is not None]
+                    val = sp.deg(sp.acos((s1**2 + s2**2 - sides[p1]**2) / (2*s1*s2)))
+                    if facts.set_angle_value(tri.angles[p1], val):
+                        changed_values.append(tri.angles[p1])
+        return changed_values
+

@@ -1,2 +1,4 @@
 - [ ] remove 'd' for degrees
 - [ ] make printing angles and lines be in the order the user typed
+- [ ] sin and cosine rules
+- [ ] make variables usable

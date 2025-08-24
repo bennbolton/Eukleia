@@ -1,5 +1,6 @@
 from .geometry import *
 from .rules import *
+from itertools import combinations
 class Solver:
     def __init__(self):
         self.branches = [SolverBranch()]
@@ -15,33 +16,31 @@ class Solver:
 
 class SolverBranch:
     def __init__(self):
-        self.symbols: dict[str, any] = {}
+        self.points: dict[str, any] = {}
         self.constraints: list[Constraint] = []
         self.rules = [rule() for rule in GeometricRule.__subclasses__()]
+        self.consRules = [rule() for rule in DefinitionRule.__subclasses__()]
         self.facts = Facts()
 
-    def add_symbol(self, obj):
+    def add_point(self, obj):
         name = getattr(obj, "name", None)
-        if name and name not in self.symbols:
-            self.symbols[obj.name] = obj
+        if name and name not in self.points:
+            self.points[obj.name] = obj
 
     def add_constraint(self, constraint:Constraint):
         self.constraints.append(constraint)
-        L,R = constraint.left, constraint.right
-        if isinstance(L, Angle) and ((isinstance(R, Number) and R not in (0,180,360)) or isinstance(R, Angle)):
-            self.ensure_triangle(L)
-            if isinstance(R, Angle):
-                self.ensure_triangle(R)
 
-    def ensure_triangle(self, angle: Angle, value=None):
-        pts = angle.points
-        if pts[0] is pts[1] or pts[0] is pts[2] or pts[1] is pts[2]:
-            return None
+
+    def create_triangles(self):
+        for comb in combinations(self.points.values(), 3):
+            if len(set(comb)) < 3:
+                continue
+            key = frozenset(comb)
+            tri = Triangle(comb)
+            if key not in self.facts.triangles and not tri.is_degenerate(self.facts):
+                self.facts.triangles[key] = tri
         
-        key = frozenset(angle.points)
-        if key not in self.facts.triangles:
-            self.facts.triangles[key] = Triangle(angle.points)
-        return self.facts.triangles[key]
+
 
     def solve(self, targets):
         def canStop(targets):
@@ -55,21 +54,27 @@ class SolverBranch:
             return True
 
 
-        agenda = [con for con in self.constraints]
+        agenda = []
+        for con in self.constraints:
+            for rule in self.consRules:
+                if con.consType() == rule.kind:
+                    changed_values = rule.apply(con, self.facts)
+                    if changed_values is not None:
+                        agenda[0:0] = changed_values
+
+        self.create_triangles()
+
         while agenda:
-            con = agenda.pop()
-            for rule in self.rules:
-                if isinstance(con, Constraint):
-                    if con.consType() == rule.kind:
-                        changed_values = rule.apply(con, self.facts)
-                        if changed_values is not None:
-                            agenda[0:0] = changed_values
-                    
-                else:
-                    if type(con).__name__ == rule.kind:
-                        changed_values = rule.apply(con, self.facts)
-                        if changed_values is not None:
-                            agenda[0:0] = changed_values
+            obj = agenda.pop()
+            for rule in self.rules:               
+                if type(obj).__name__ in rule.kind:
+                    changed_values = rule.apply(obj, self.facts)
+                    if changed_values is not None:
+                        agenda[0:0] = changed_values
+                        for value in changed_values:
+                            for tri in rule.getTriangles(value, self.facts):
+                                if tri.is_degenerate(self.facts):
+                                    self.facts.triangles.pop(frozenset(tri.points), None)
             if canStop(targets):
                 return {t: self.facts.get_value(t) for t in targets}
         return {t: self.facts.get_value(t) or "Undeterminable" for t in targets}
